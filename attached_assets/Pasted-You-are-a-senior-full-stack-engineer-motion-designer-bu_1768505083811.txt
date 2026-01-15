@@ -1,0 +1,490 @@
+You are a senior full-stack engineer + motion designer building a production-grade, end-to-end demo app in Replit.
+
+Build a FULL-STACK web app named:
+AQUAINTEL — PETBottle AI Ops
+Tagline: Risk-Aware Dynamic Scheduling for a Plastic Water Bottle Smart Factory
+Signature feature: “Before vs After” scheduling that shows how AI risk scores change scheduling decisions.
+
+========================
+ABSOLUTE MERGE RULES (DO NOT VIOLATE)
+========================
+1) DO NOT downgrade the backend stack: MUST be FastAPI (Python) + SQLite (SQLAlchemy).
+2) DO NOT downgrade the frontend stack: MUST be React + Vite + TypeScript.
+3) DO NOT remove premium UI requirements: cinematic loader, Apple-like scroll story landing, glass login, dark-only theme, ocean-blue accent, smooth scroll + scroll-driven animation.
+4) Resolve the “Next.js vs Vite” mismatch by implementing Prompt A’s UI/UX inside Vite/React.
+   - This repo is NOT Next.js.
+   - Replicate all Prompt A UX (loader, landing, scroll story, fake browser frame, navbar hide/reveal, module sections, gallery modal) in React/Vite using Framer Motion + GSAP/ScrollTrigger + Lenis.
+5) All pages must be real and functional with seeded demo data + mocked where external services aren’t configured.
+6) If WhatsApp is not configured, the app MUST still work end-to-end with in-app approvals; WhatsApp UI shows “disabled” with health status.
+
+========================
+NON-NEGOTIABLES (BACKEND + PRODUCT CORE)
+========================
+1) Full-stack: FastAPI (Python) + SQLite (SQLAlchemy) + React/Vite/TypeScript
+2) JWT auth + RBAC roles: viewer | operator | supervisor | admin
+3) CSV Upload Center for Jobs, Sensors, Quality:
+   - wizard, mapping UI, validation, preview, errors, history
+4) Two schedules: Baseline vs Risk-Aware with KPI comparison
+5) Engines implemented:
+   - Scheduler: OR-Tools CP-SAT + heuristic baseline + warm-start + freeze window
+   - Predictive Maintenance: RandomForest, strict time-split to prevent leakage, 72h failure risk
+   - Quality: SPC (X-bar/R rules) + Anomaly (IsolationForest or z-score drift), alert fatigue controls
+6) Orchestrator + Policy engine: hourly + manual trigger; reschedule cooldown + hysteresis; freeze window enforced at constraint level
+7) Human-in-the-loop approvals for critical actions, with audit log
+8) Fairness dashboard: DO NOT use operator_id/shift_id in models; DO report group metrics (shift/line/supplier_batch/mold)
+9) Evaluation page: baseline vs risk-aware + injected scenarios + objective contribution breakdown
+10) WhatsApp HITL: Twilio WhatsApp default + optional Meta WhatsApp Cloud API; webhook; approve/deny via replies; log everything.
+
+========================
+PREMIUM UI / MOTION NON-NEGOTIABLES (FROM PROMPT A)
+========================
+Global look/feel:
+- Dark theme only (NO theme toggle).
+- Minimal grayscale surfaces + glass panels; ocean-blue accent glow for actions and focus rings.
+- Subtle noise overlay texture (CSS).
+- Rounded corners, soft shadows, crisp typography (Inter).
+- Must feel “expensive” and smooth.
+
+Motion stack:
+- Smooth scroll: Lenis (or equivalent)
+- Main scroll story: GSAP + ScrollTrigger
+- Micro-interactions & transitions: Framer Motion
+- Avoid heavy 3D; keep performance smooth; only image crossfades (no heavy video morphs).
+
+Key UX:
+- “Fake browser frame” wrapper on Landing (and optionally Login/App as motif):
+  - mac dots + url text “aquaintel.ai”
+- Navbar hides on scroll down, appears on scroll up.
+- Cinematic loader intro (1.5–2.5s) with:
+  1) neon ocean-blue dot
+  2) dot stretches into thin line
+  3) letters “AQ” briefly appear
+  4) expand to “AQUAINTEL”
+  5) underline draws
+  6) fade out into hero
+  - No progress bar. Skip quickly if assets already ready.
+
+Landing page (Apple-like scroll story):
+- Full-screen hero with muted looping video placeholder (or animated gradient).
+- Headline: “AQUAINTEL — PETBottle AI Ops”
+- Subhead: “Risk-aware scheduling + machine health + quality drift control — with approvals and audit trails.”
+- CTAs: Explore, Login
+- Cursor “light follows” ocean-blue halo effect that fades on idle.
+- Split text reveal on load with blur-to-sharp.
+
+Scroll sections:
+1) “What it does” cards: Plan, Predict, Prevent, Approve, Audit (staggered reveal + slight parallax)
+2) “Risk-Aware Dynamic Scheduling” with BEFORE vs AFTER timeline UI (crossfade between baseline/risk-aware)
+3) “Modules” pinned section: left pinned title, right content transitions (Upload Center, Scheduling, Maintenance, Quality, Policy, Approvals, Fairness, Evaluation)
+4) Cinematic mid-story product shots: crossfade images + minimal spec labels (FailureRisk 72h, SPC drift control, Freeze window, HITL approvals)
+5) Gallery grid with filter + modal detail pages (Scheduling, Maintenance, Quality, Governance, Admin)
+- No “Designer vs Developer” split section (remove entirely)
+
+Protected App shell:
+- Sidebar nav with modules; admin-only items hidden if not admin.
+- Top-right profile dropdown (Profile, optional Settings, Logout) — NOT a sidebar page.
+- Each page must have: header with KPI chips, at least 2 cards, sortable table, optional right-rail inspector.
+- Use a reusable component library: Button, Card, Table, Modal, Drawer, Tabs, KPIChip, SidebarNav, TopbarProfileMenu, Skeletons.
+
+========================
+ROUTES / PAGES
+========================
+Frontend routes (React Router):
+- /               Landing (scroll story)
+- /login          Glass login
+- /app            Protected layout shell (redirects to /app/dashboard)
+- /app/dashboard
+- /app/schedule
+- /app/machine-health
+- /app/quality-control
+- /app/alerts
+- /app/tickets
+- /app/approvals
+- /app/upload-center
+- /app/fairness
+- /app/evaluation
+- /app/admin-rules     (admin only)
+- /app/whatsapp        (admin only)
+
+Backend routes as specified in Prompt B (implement fully):
+Auth:
+POST /auth/login
+GET /auth/me
+
+Core:
+GET/POST /machines
+GET/POST /jobs
+GET /alerts + POST /alerts/{id}/ack
+GET/POST /tickets
+GET /approvals
+POST /approvals/{id}/approve
+POST /approvals/{id}/deny
+
+Uploads:
+POST /upload/parse
+POST /upload/import
+GET /upload/history
+
+Scheduling:
+POST /schedule/run?mode=baseline|risk_aware
+GET /schedule/latest?mode=baseline|risk_aware
+GET /schedule/explain?run_id=...
+GET /schedule/diff?run_id_a=...&run_id_b=...
+POST /schedule/whatif (inject breakdown/drift event)
+
+Risk:
+GET /risk/latest
+GET /risk/machine/{id}/history
+
+Quality:
+GET /quality/spc?machine_id=...&metric=weight|thickness
+GET /quality/defects/summary
+
+Orchestrator:
+POST /orchestrator/run
+
+Admin:
+GET/POST /admin/rules
+GET/POST /admin/whatsapp/config
+POST /admin/seed (dev only; protected by ENV=dev + admin + secret header)
+
+Sim:
+POST /sim/whatif
+
+WhatsApp:
+POST /whatsapp/webhook
+POST /approvals/{id}/send_whatsapp
+
+========================
+FOLDER STRUCTURE (CREATE ALL FILES)
+========================
+/backend
+  main.py settings.py db.py models.py schemas.py auth.py seed.py whatsapp.py
+  /routers (auth.py, machines.py, jobs.py, schedule.py, risk.py, quality.py, alerts.py, tickets.py, approvals.py, admin.py, upload.py, whatsapp.py, sim.py)
+  /engines (scheduler_cp.py, scheduler_heuristic.py, pm_model.py, quality_spc.py, orchestrator.py, policy.py, explain.py)
+  /simulators (sensors.py, quality.py, events.py)
+  /utils (time.py, kpis.py, csv_tools.py, validators.py, locks.py)
+
+/frontend
+  package.json vite.config.ts tailwind.config.js postcss.config.js
+  /src
+    main.tsx App.tsx routes.tsx
+    /lib (api.ts, types.ts, authStore.ts, ws.ts, motion.ts, scroll.ts)
+    /components (Nav.tsx, ProtectedRoute.tsx, RoleGate.tsx, KPIGrid.tsx, GanttChart.tsx, RiskBadge.tsx, UploadWizard.tsx, ColumnMapper.tsx, UploadHistory.tsx, ApprovalCard.tsx, BrowserFrame.tsx, LoaderIntro.tsx, ScrollStory.tsx, Gallery.tsx, TopbarProfileMenu.tsx, SidebarNav.tsx, Skeleton.tsx)
+    /pages (Landing.tsx, Login.tsx, Dashboard.tsx, Schedule.tsx, MachineHealth.tsx, Quality.tsx, Upload.tsx, Approvals.tsx, Tickets.tsx, Alerts.tsx, Fairness.tsx, Evaluation.tsx, AdminRules.tsx, WhatsApp.tsx)
+  /public
+    /templates (jobs.csv, sensors.csv, quality.csv)
+    /media (hero.mp4 placeholder OR omit and use gradient)
+.env.example
+requirements.txt
+README.md
+
+========================
+DATABASE SCHEMA (SQLITE + SQLALCHEMY)
+========================
+Implement these tables (minimum) exactly:
+- users(id, email, password_hash, role, created_at)
+- audit_logs(id, ts, user_id, action, entity_type, entity_id, before_json, after_json, reason_code)
+
+Factory assets:
+- machines(id, name, type, status, setup_group)
+
+Jobs + scheduling:
+- jobs(id, product_size, quantity, due_date, priority, processing_time_min, required_machine_type, mold_id, setup_group, created_at, is_urgent)
+- schedules(id, run_id, created_at, mode[baseline|risk_aware], scenario, kpi_json, weights_json)
+- schedule_items(id, schedule_id, machine_id, job_id, start_ts, end_ts, frozen, risk_snapshot_json, locked_from_prev:boolean)
+
+Sensors + quality + risks:
+- sensor_readings(id, machine_id, ts, vibration, temperature, power_draw, air_pressure, cycle_time, motor_current, supplier_batch_id, shift_id)
+- sensor_aggregates(id, machine_id, window_end_ts, features_json)
+- quality_measurements(id, machine_id, ts, bottle_weight_g, wall_thickness_mm, neck_diameter_mm, defect_label, mold_wear_score, supplier_batch_id, shift_id)
+- spc_limits(id, machine_id, mold_id, product_size, metric, cl, ucl, lcl, computed_at)
+- risk_scores(id, entity_type, entity_id, ts, failure_risk, quality_risk, uncertainty_json, explanation_json)
+
+Workflows:
+- alerts(id, ts, severity[INFO|WARNING|CRITICAL], type, entity_type, entity_id, message, acknowledged_by, acknowledged_at, dedupe_key)
+- tickets(id, ts, type, status, assigned_to, due_by, entity_type, entity_id, policy_json)
+
+Approvals / HITL:
+- approvals(id, ts, action_type, entity_type, entity_id, requested_by, status[pending|approved|denied], approved_by, approved_at, reason_code, notes, source[in_app|whatsapp])
+- approval_requests(id, approval_id, channel[in_app|whatsapp], external_message_id, sent_at, last_state_json)
+
+Uploads:
+- uploads(id, ts, user_id, upload_type[jobs|sensors|quality], filename, row_count, mapping_json, status[ok|error], error_json)
+
+Admin rules / config:
+- admin_rules(id, updated_at, rules_json)
+
+WhatsApp integration:
+- whatsapp_config(id, provider[twilio|meta], enabled:boolean, from_number, supervisor_numbers_json, webhook_secret, updated_at)
+
+Seed demo admin:
+- admin@aquaintel.com / admin123
+
+========================
+CSV UPLOAD CENTER (MUST BE REAL)
+========================
+Frontend:
+- Upload wizard steps:
+  1) Upload file
+  2) Parse + auto-detect columns
+  3) Column mapping UI (dropdowns for required fields)
+  4) Validate rows: preview + errors list
+  5) Import to DB
+  6) Upload history
+
+Required fields:
+- Jobs: product_size, quantity, due_date(ISO-8601), priority, processing_time_min, required_machine_type, mold_id, setup_group
+- Sensors: machine_id, ts(ISO-8601 UTC), vibration, temperature, air_pressure, cycle_time
+- Quality: machine_id, ts(ISO-8601 UTC), bottle_weight_g, wall_thickness_mm, defect_label
+
+Backend:
+- POST /upload/parse?type=jobs|sensors|quality returns detected columns, sample rows, required fields, preview
+- POST /upload/import mapping + file_id imports, returns counts + errors
+- GET /upload/history
+
+Data safety:
+- Enforce ISO-8601 timestamps; normalize to UTC on ingest
+- Store mapping_json + error_json in uploads table
+- Upload should influence data shown across pages (persist to DB; refresh queries).
+
+========================
+ENGINES (MUST IMPLEMENT)
+========================
+1) Scheduler Engine (OR-Tools CP-SAT + Heuristic)
+- Rolling horizon: 7 days
+- Shift calendar: 08:00–20:00 daily
+- Setup/changeover time from product_size/mold_id/setup_group changes
+- Packing bottleneck as shared resource with capacity max_units_per_hour and per-job packing_time = quantity / packing_rate; enforce CP-SAT resource constraint
+- Maintenance reservation windows block machine time
+- Freeze window: next 3 hours LOCKED
+
+Freeze window persistence fix (must be real):
+- Persist previous schedule items within freeze window with locked_from_prev=true
+- In CP-SAT, treat them as fixed intervals; only schedule beyond freeze boundary
+
+Two-stage scheduling:
+- Baseline: heuristic EDD + setup grouping
+- Risk-aware: CP-SAT refine, 30s time limit, warm-start from baseline/last run
+
+Objective weighted sum:
+minimize lateness + changeovers + risk_cost(failure+quality) + overtime + idle + stability_penalty
+
+Weights:
+- Stored in admin_rules.rules_json with presets: Balanced, On-time first, Risk first
+- Evaluation must display objective component contributions
+- Endpoint: GET /schedule/explain?run_id=... returns contributions per component
+
+Stability penalty:
+- count jobs moved machine
+- count jobs shifted > X minutes
+
+2) Predictive Maintenance
+- Features from last 24h window per machine:
+  mean, std, slope, max spike, cycle_time drift, variance proxy, vibration FFT-energy proxy (simplified)
+- RandomForestClassifier predicting failure in next 72h
+
+Data leakage fix:
+- Strict time split (weeks 1–6 train, 7–8 test)
+- Label for window end t: 1 if breakdown exists in (t, t+72h]
+- Fixed stride (1 hour)
+
+Explainability:
+- per-sample permutation importance OR z-score deviations vs baseline per machine
+- Return top 3 drivers per prediction
+Uncertainty:
+- RF tree variance (std dev of probs across trees)
+- High uncertainty requires supervisor confirmation for critical actions
+
+3) Quality Engine (SPC + Anomaly)
+- SPC subgrouping defined: subgroup per 30 minutes (or fixed N samples simulated)
+- Compute limits from stable period (first 7 days), store in spc_limits
+
+SPC rules:
+- 1 beyond 3σ
+- 7 trending
+- sudden variance jump
+
+Anomaly:
+- IsolationForest or z-score drift
+Two-signal confirmation:
+- CRITICAL only when SPC rule + anomaly high
+
+Alert fatigue fix:
+- severity tiers
+- debounce 30 min
+- dedupe_key
+
+Ground truth fix:
+- simulators must generate true_drift_event windows and true_failure_event windows
+- compute false alarm rates vs ground truth
+
+4) Orchestrator
+- Runs hourly + manual endpoint
+- Pipeline: refresh aggregates -> compute risks -> apply policy -> alerts/tickets -> reschedule if triggered
+Triggers:
+- FailureRisk > threshold (0.75)
+- SPC drift
+- urgent order
+- downtime event
+
+Thrashing fix:
+- hysteresis (trigger >0.78)
+- cooldown 60 min unless downtime event
+- stability penalty included
+
+SQLite concurrency fix:
+- enable WAL
+- batch inserts
+- single orchestrator runner + lightweight lock queue
+
+5) Policy Engine
+- risk <0.5 monitor
+- 0.5–0.75 inspection within 72h
+- >0.75 maintenance slot within 24–48h + avoid critical jobs
+- cost-based trigger: ExpectedDowntimeCost > MaintenanceCost
+- expose params in Admin Rules
+
+========================
+HUMAN-IN-THE-LOOP + WHATSAPP (MUST BE REAL)
+========================
+Critical actions require Supervisor approval:
+- stop machine/line
+- scrap batch
+- force maintenance now
+- override schedule
+- confirm reschedule when uncertainty is high
+
+Flow:
+1) Orchestrator creates ticket + approval pending
+2) Sends WhatsApp to configured supervisors:
+   - action summary, entity, risks, drivers
+   - reply "APPROVE <approval_id>" or "DENY <approval_id> <reason_code>"
+3) Webhook validates signature + parses reply + updates approvals with source=whatsapp + writes audit log + applies action if approved.
+
+Providers:
+- Default Twilio WhatsApp for demo
+- Optional Meta WhatsApp Cloud API
+No hardcoded secrets; use env vars.
+If disabled: in-app approvals still work; WhatsApp page shows disabled with health status.
+
+Backend:
+- POST /whatsapp/webhook
+- GET/POST /admin/whatsapp/config
+- POST /approvals/{id}/send_whatsapp
+- In-app approve/deny endpoints
+
+Security:
+- validate Twilio signature OR Meta secret
+- rate limit webhook
+- allow only supervisor_numbers
+
+Templates:
+- approval request
+- reminder after 15 min
+- decision confirmation
+
+========================
+FAIRNESS MODULE (MUST ENFORCE)
+========================
+- Models MUST NOT use operator_id or shift_id as features.
+- Admin Rules include feature whitelist; only sensor/process features allowed.
+- Still compute and display group metrics by:
+  shift_id, supplier_batch_id, mold_id, machine_id:
+  alert rate, false alarm rate, defect rate
+Governance:
+- if disparity ratio exceeds threshold, create “review needed” alert/ticket.
+
+========================
+EVALUATION (PROOF PAGE)
+========================
+Scenario runner:
+- Scenario A normal
+- Scenario B inject breakdown tomorrow + quality drift event window
+
+Compare Baseline vs Risk-aware:
+- on-time delivery %
+- downtime hours
+- defect ppm/scrap
+- schedule stability (# moved, # shifts >X min)
+- changeover count
+- risk exposure score
+
+Add:
+- GET /schedule/diff?run_id_a=&run_id_b= with explanation of why moves occurred
+- Show weight presets and objective contribution breakdown in UI
+
+========================
+FRONTEND PAGE REQUIREMENTS (UI QUALITY BAR)
+========================
+All module pages must have:
+- Header with KPI chips
+- At least 2 cards (charts/insights)
+- Sortable table
+- Optional right-rail inspector/drawer for selected row
+- Skeleton loading states
+- Designed empty states
+
+Specific pages:
+- Dashboard: OEE, On-time output, Risk index, Quality yield; activity feed
+- Schedule: baseline vs risk-aware toggle; gantt/timeline; freeze window indicator; stability meter; what-if inject
+- Machine Health: failure risk 72h chart; uncertainty; drivers list
+- Quality Control: SPC charts; anomaly timeline; defects summary
+- Alerts: severity filters; detail drawer; “Create ticket”
+- Tickets: list + statuses + assignees; detail view
+- Approvals: queue; approve/deny with reason; WhatsApp status
+- Upload Center: full wizard; influences DB-backed data
+- Fairness: proxy feature checks; group metrics; governance alerting
+- Evaluation: before vs after; schedule diff; narrative explanation
+- Admin Rules (admin): thresholds; weights presets; feature whitelist
+- WhatsApp (admin): provider config; numbers; webhook url; health
+
+Landing + Login:
+- Landing: full scroll story + module pin sections + gallery modal + cursor halo + fake browser frame
+- Login: glassmorphic; JWT login screen (email/password for demo) AND optional OTP simulation can be included as a secondary mode, but DO NOT remove JWT login.
+  - Make login UX premium; entrance animations; “security cues” UI.
+
+IMPORTANT AUTH MERGE NOTE:
+Backend MUST be JWT + RBAC (Prompt B). UI may optionally include OTP mode, but JWT is the primary working auth.
+
+========================
+ONE-COMMAND RUN (REPLIT)
+========================
+Provide scripts to run backend (:8000) and frontend (:5173) together.
+- Root README with exact steps
+- Prefer a root start script (or replit config) that starts both.
+
+Frontend dev server should proxy API calls to backend.
+
+========================
+ENV + SECRETS
+========================
+Create .env.example with:
+- BACKEND_SECRET_KEY / JWT_SECRET
+- ENV=dev
+- ADMIN_SEED_SECRET
+- TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM, TWILIO_WEBHOOK_SECRET
+- META_WA_TOKEN, META_WA_PHONE_ID, META_WA_VERIFY_TOKEN
+- WHATSAPP_PROVIDER=twilio|meta
+- WHATSAPP_ENABLED=true|false
+
+Do not hardcode secrets.
+
+========================
+DELIVERABLES
+========================
+Generate the full repository implementing everything above, including:
+- README with Replit run steps
+- .env.example
+- sample CSV templates in /frontend/public/templates (jobs.csv, sensors.csv, quality.csv)
+- seeded demo data + injected scenario utilities
+- robust error handling
+- all premium UI animations implemented (Lenis + GSAP/ScrollTrigger + Framer Motion)
+- all pages not blank — structured, consistent component system
+
+When done, print:
+1) run instructions
+2) demo steps (baseline -> inject event -> orchestrator -> WhatsApp approval -> reschedule -> evaluation)
+3) where to edit thresholds/weights and WhatsApp config
+
+Now build the entire full-stack project exactly as specified with clean folder structure, stable performance, and premium UI.

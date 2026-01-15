@@ -1,0 +1,115 @@
+REPLIT STABILITY PATCH (PASTE THIS AT THE VERY END AFTER THE MAIN PROMPT)
+Purpose: prevent Replit AI from skipping files, cutting features, or dropping UI animations / backend engines. This is a hard guardrail + execution order.
+
+========================
+HARD GUARDRAILS (NO SHORTCUTS)
+========================
+- Do NOT “summarize” or “describe” code. You MUST CREATE/EDIT THE ACTUAL FILES in the repo.
+- Do NOT skip any module pages or backend routers. Every listed file must exist (can be minimal but functional).
+- Do NOT drop premium UI motion (Lenis + GSAP/ScrollTrigger + Framer Motion) and do NOT drop core engines (OR-Tools scheduler, RF PM model, SPC+Anomaly quality, orchestrator, policy, approvals, WhatsApp).
+- Do NOT leave TODOs for critical logic. If something is optional (Meta WhatsApp), implement stubs + configuration and keep Twilio default fully working.
+- App must run end-to-end even if WhatsApp is disabled (in-app approvals must still complete workflows).
+
+========================
+BUILD ORDER (FOLLOW EXACTLY)
+========================
+PHASE 0 — Repo + tooling
+1) Create exact folder structure for /backend and /frontend and root files.
+2) Root scripts: add a single command to start both backend and frontend in Replit.
+   - If Replit supports “run” command: use a root start script (e.g., start.sh) that runs backend and frontend concurrently.
+3) Create .env.example with all required keys (no secrets hardcoded).
+
+PHASE 1 — Backend foundation (must compile first)
+1) /backend/settings.py, db.py, models.py, schemas.py
+2) Configure SQLite with WAL mode + sane connection options to reduce locks.
+3) Implement auth.py (JWT) + RBAC dependency helpers.
+4) Implement seed.py (admin@aquaintel.com / admin123 + demo users + machines + jobs + sample sensor/quality).
+5) main.py wires routers + CORS + exception handlers.
+
+PHASE 2 — Backend routes (minimum functional endpoints)
+Implement routers with real logic (even if simplified data):
+- /routers/auth.py: login + me
+- /routers/upload.py: parse/import/history (real CSV parsing, mapping, validation, DB insert)
+- /routers/schedule.py: run/latest/explain/diff/whatif (real baseline + CP-SAT; explain outputs)
+- /routers/risk.py: latest + machine history (reads risk_scores)
+- /routers/quality.py: spc + defects summary (compute limits + return series)
+- /routers/approvals.py: list + approve/deny + send_whatsapp
+- /routers/whatsapp.py: webhook validation + parse APPROVE/DENY replies + log + apply decision
+- /routers/orchestrator.py (or sim.py if you mapped it): orchestrator/run pipeline (aggregates -> risks -> policy -> tickets/alerts -> approvals -> reschedule)
+- /routers/admin.py: admin rules + whatsapp config + dev seed endpoint (ENV=dev + admin + secret header)
+- /routers/alerts.py + tickets.py + machines.py + jobs.py: CRUD basics + ack flows
+
+PHASE 3 — Engines must exist and be callable
+Create /backend/engines/* with working implementations (can be lightweight but real):
+- scheduler_heuristic.py: EDD + setup grouping baseline
+- scheduler_cp.py: CP-SAT refine + warm start + packing resource + freeze-window locked_from_prev + 30s limit
+- pm_model.py: RandomForest time split + per-prediction driver explanation + uncertainty proxy
+- quality_spc.py: SPC limits from stable period + rule detection + anomaly confirm
+- orchestrator.py: hourly pipeline + cooldown/hysteresis + locking + WAL-safe batches
+- policy.py: thresholds + cost-based decisions + approval gating
+- explain.py: objective contribution breakdown + schedule diff explanation text
+
+PHASE 4 — Frontend foundation (must render, then enhance)
+1) Vite + React Router + Tailwind. Add Inter font.
+2) Implement API client + auth store (Zustand).
+3) Implement ProtectedRoute + RoleGate.
+4) Implement the premium layout components:
+   - BrowserFrame wrapper
+   - SidebarNav + TopbarProfileMenu
+   - Skeleton loading states
+
+PHASE 5 — Premium landing + loader (do not skip)
+1) LoaderIntro: dot→line→AQ→AQUAINTEL→underline→fade (1.5–2.5s), skip quickly if ready.
+2) Landing scroll story:
+   - Lenis smooth scroll
+   - GSAP + ScrollTrigger sections
+   - Cursor halo “light follows cursor”
+   - Module pinned section
+   - Before vs After schedule crossfade demo section
+   - Gallery grid + filter + modal
+3) Navbar hide-on-scroll-down, show-on-scroll-up.
+
+PHASE 6 — App pages (must be real UI, not blank)
+Implement each /app/* page with:
+- KPI chips (from backend)
+- at least 2 cards (charts/insights)
+- sortable table
+- detail drawer or right-rail inspector (optional but preferred)
+Required pages:
+Dashboard, Schedule, Machine Health, Quality Control, Alerts, Tickets, Approvals, Upload Center, Fairness, Evaluation, Admin Rules (admin), WhatsApp (admin)
+
+PHASE 7 — Wiring + demo flow must work
+1) Upload CSV → data appears in schedule/health/quality pages.
+2) Run baseline schedule → view Gantt.
+3) Run risk-aware schedule → compare KPIs + stability.
+4) Inject scenario → orchestrator/run triggers alerts/tickets/approvals.
+5) Approve in-app → changes apply + audit log created.
+6) WhatsApp:
+   - If enabled + configured: send message + webhook approves/denies.
+   - If not configured: show disabled status but app still works.
+
+========================
+REPLIT RUN REQUIREMENTS
+========================
+- Ensure ports: backend :8000, frontend :5173
+- Configure Vite proxy to backend.
+- Add clear README: exact steps, demo script, and where to configure WhatsApp + rules/weights.
+
+========================
+QUALITY CHECKLIST (SELF-VERIFY BEFORE STOPPING)
+========================
+Before you finish, verify:
+- Backend starts without errors
+- Frontend starts without errors
+- Login works (JWT stored, /auth/me works)
+- RBAC hides admin pages for non-admin + shows 403 on direct access
+- Upload parse/import/history works for all 3 CSV types
+- Baseline schedule run returns schedule_items
+- Risk-aware schedule run returns schedule_items + kpi_json + explain breakdown
+- Freeze window lock_from_prev implemented and persisted
+- Orchestrator run creates alerts/tickets/approvals and respects cooldown
+- Approvals update audit_logs
+- WhatsApp page shows enabled/disabled + webhook URL + health status
+- Landing has Lenis + ScrollTrigger + loader + cursor halo + pinned modules + gallery modal
+
+If any item fails, fix it immediately in code and re-test. Do not stop early.
