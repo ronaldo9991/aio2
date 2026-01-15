@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import bottleImage from '@assets/generated_images/premium_pet_water_bottle.png';
+import bottleImage from '@assets/generated_images/transparent_pet_bottle_cutout.png';
 
 gsap.registerPlugin(ScrollTrigger);
 
