@@ -1,0 +1,135 @@
+You are a senior UI engineer + motion designer building inside an existing React + Vite + TypeScript + Tailwind app in Replit. The landing page already matches the AQUAINTEL hero screenshot.
+
+GOAL (NOT A STATIC IMAGE)
+Implement a “scroll-driven rolling bottle” hero background:
+- A single realistic PET plastic water bottle (Aquaintel) ~80% filled.
+- The bottle is the main background visual (no extra busy background behind it, only subtle vignette/noise/glow).
+- When the user scrolls DOWN (top → bottom), the bottle “rolls/reveals” from TOP → BOTTOM.
+- When the user scrolls UP (bottom → top), the bottle “rolls/reveals” from BOTTOM → TOP.
+This must feel like an Apple-style premium scroll interaction: smooth, stable, no jitter.
+
+CRITICAL CONCEPT (HOW TO ACHIEVE THE “TOP→BOTTOM / BOTTOM→TOP” REVEAL)
+Do NOT just place an image behind text.
+
+Instead:
+1) Render ONE bottle asset (PNG/WebP with transparency).
+2) Reveal it using a DYNAMIC CLIP MASK that changes with scroll progress:
+   - Use CSS clip-path (inset) OR mask-image with a gradient.
+   - Scroll down increases reveal from top to bottom: clip-path inset(top=0, bottom=decreasing) OR mask-size grows downward.
+   - Scroll up reverses: reveal from bottom to top.
+3) Add a “rolling” illusion:
+   - Rotate the bottle slightly as it reveals (like it’s rolling in place).
+   - Add a subtle horizontal drift + scale for depth.
+   - Add a moving specular highlight band that shifts with scroll direction.
+
+NON-NEGOTIABLES
+- Use Lenis for smooth scrolling (reuse existing if present).
+- Use GSAP + ScrollTrigger to drive all scroll-linked transforms and the reveal mask.
+- Performance: transforms + CSS variables only. Avoid layout thrash.
+- The bottle must be alone: background should be mostly clean dark gradient with subtle noise and ocean-blue rim glow.
+- Hero text remains readable and clickable. Bottle never blocks pointer events.
+
+ASSET REQUIREMENTS
+- Add a high-quality transparent bottle render:
+  /frontend/src/assets/aquaintel-bottle.webp (or .png)
+  Bottle must include visible waterline (~80% fill), subtle plastic highlights, minimal Aquaintel label.
+- Optional: add a separate highlight overlay asset (transparent) if desired:
+  /frontend/src/assets/aquaintel-bottle-highlight.png
+But the system must work with just ONE bottle asset.
+
+IMPLEMENTATION TASKS
+A) Create BottleRollReveal component
+- File: /frontend/src/components/BottleRollReveal.tsx
+- It renders a full-bleed hero background layer with:
+  - Clean base (dark gradient + noise)
+  - Bottle container (absolute center, responsive)
+  - Bottle image (main)
+  - Glow layer (pseudo-element blur behind bottle)
+  - Specular highlight band (CSS gradient overlay that moves with scroll)
+
+B) Dynamic reveal mask controlled by scroll
+Use CSS variables to control reveal:
+- --revealTop (0..100)
+- --revealBottom (0..100)
+Approach (recommended):
+- Use clip-path inset(var(--clipTop) 0 var(--clipBottom) 0 round 24px);
+Where:
+- Scroll DOWN: clipTop stays near 0%, clipBottom animates from 100% → 0% (reveals top→bottom)
+- Scroll UP: reverse the same scrubbed timeline automatically via ScrollTrigger
+
+Also add a secondary mask for “water shimmer” feel:
+- Use mask-image: linear-gradient(...) so edges feather slightly.
+
+C) Rolling illusion + direction awareness
+- Use ScrollTrigger’s onUpdate to detect scroll direction (self.direction).
+- When direction is DOWN:
+  - rotateZ eases toward +6deg
+  - highlight band moves downward slightly
+- When direction is UP:
+  - rotateZ eases toward -6deg
+  - highlight band moves upward slightly
+- Always scrub these transforms with scroll so it feels physically connected, not random.
+
+D) Make bottle the ONLY hero background visual
+- Remove/disable other heavy hero backgrounds behind it.
+- Keep only:
+  - dark vignette gradient
+  - subtle ocean-blue halo behind bottle
+  - noise overlay
+- Keep the existing navbar and hero content above it.
+
+E) Integrate into Landing hero
+- File: /frontend/src/pages/Landing.tsx
+- The hero section must be relative, full screen, and contain:
+  - <BottleRollReveal /> as the background layer
+  - Foreground hero content (title, subtitle, CTAs)
+- Set z-index:
+  - Bottle layer: z-10
+  - Hero content: z-20
+- Bottle layer pointer-events: none.
+
+F) Responsiveness
+- Desktop: bottle large, centered
+- Mobile: bottle smaller and slightly lowered; reduce rotation and reveal intensity.
+
+G) Accessibility / reduced motion
+- If prefers-reduced-motion:
+  - disable rolling + direction-based tilt
+  - show the bottle fully revealed at ~0.6 opacity with minimal glow.
+
+ANIMATION SPEC (SCROLL RANGE)
+Use a hero ScrollTrigger:
+- trigger: hero section
+- start: "top top"
+- end: "bottom top" (or "+=120%" if you want more room)
+- scrub: true (smooth)
+
+Timeline behavior across scroll progress 0 → 1:
+1) Bottle reveal:
+   - clipBottom: 100% → 0% (full reveal)
+2) Rolling tilt:
+   - rotateZ: 0deg → +6deg (but direction-sensitive adjustment onUpdate)
+3) Depth:
+   - scale: 0.98 → 1.06
+   - y: 40px → -40px (gentle parallax)
+4) Fade out near the end:
+   - opacity: 1 → 0.25 at progress 0.9 → 1.0
+   - so bottle doesn’t awkwardly persist beyond hero unless desired.
+
+DELIVERABLE FILES
+- Create/modify:
+  - /frontend/src/components/BottleRollReveal.tsx (new)
+  - /frontend/src/pages/Landing.tsx (wire it in)
+  - /frontend/src/lib/scroll.ts (helpers for Lenis + GSAP if you have)
+  - /frontend/src/assets/aquaintel-bottle.webp (placeholder path)
+
+ACCEPTANCE CHECKLIST (MUST PASS)
+- Bottle is the main hero background (clean scene, not cluttered).
+- Scroll DOWN reveals bottle top→bottom smoothly.
+- Scroll UP reveals bottle bottom→top smoothly (reverse).
+- Bottle subtly “rolls” with direction (tilt + highlight shift), feels premium.
+- No jitter, no layout shifts, no pointer blocking.
+- Mobile looks clean; reduced motion works.
+
+NOW IMPLEMENT:
+Write the actual code in the specified files using GSAP + ScrollTrigger + Lenis + Tailwind, with clean comments and no TODOs for core behavior.

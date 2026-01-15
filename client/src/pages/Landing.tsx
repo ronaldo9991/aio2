@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/Navbar';
 import { CursorHalo } from '@/components/CursorHalo';
 import { BrowserFrame } from '@/components/BrowserFrame';
-import { BottleBackground } from '@/components/BottleBackground';
+import { BottleRollReveal } from '@/components/BottleRollReveal';
 
 const features = [
   { icon: Calendar, title: 'Plan', description: 'Optimal job scheduling with risk-aware optimization' },
@@ -185,14 +185,7 @@ export function Landing() {
         ref={heroRef}
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        <div className="absolute inset-0 gradient-ocean animate-gradient" />
-        
-        <div className="absolute inset-0" style={{ zIndex: 1 }}>
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '1s' }} />
-        </div>
-
-        <BottleBackground heroRef={heroRef as React.RefObject<HTMLElement>} />
+        <BottleRollReveal heroRef={heroRef as React.RefObject<HTMLElement>} />
 
         <motion.div
           className="relative max-w-5xl mx-auto px-6 text-center"

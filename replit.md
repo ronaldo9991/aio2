@@ -127,7 +127,10 @@ All API routes are prefixed with `/api`:
 - Glass morphism components and premium animations
 - JWT authentication with role-based access
 - Complete API backend with in-memory storage
-- Added premium scroll bottle background effect on landing hero
-  - PET bottle with GSAP ScrollTrigger parallax animation
-  - Floats when idle, fades on scroll, respects reduced-motion
-  - Component: `client/src/components/BottleBackground.tsx`
+- Added premium scroll-driven bottle reveal effect on landing hero
+  - PET bottle with GSAP ScrollTrigger-driven animations
+  - Scroll down: bottle moves up, scales, rotates with direction awareness
+  - Floating animation when idle, fades on scroll progress
+  - Shimmer highlight effect and ocean-blue glow
+  - Respects prefers-reduced-motion for accessibility
+  - Component: `client/src/components/BottleRollReveal.tsx`
