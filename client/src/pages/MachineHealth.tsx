@@ -375,7 +375,7 @@ export function MachineHealth() {
                 <div className="absolute top-[40%] left-0 right-0 h-px bg-red-500/30"></div>
                 
                 {/* Line chart */}
-                <svg className="w-full h-full" preserveAspectRatio="none">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                   <polyline
                     fill="none"
                     stroke="hsl(199, 89%, 48%)"
@@ -383,7 +383,7 @@ export function MachineHealth() {
                     points={machineRiskTimeline.map((d, i) => {
                       const x = (i / (machineRiskTimeline.length - 1)) * 100;
                       const y = 100 - ((d.avgRisk / 0.7) * 100);
-                      return `${x}%,${y}%`;
+                      return `${x},${y}`;
                     }).join(' ')}
                   />
                   {machineRiskTimeline.map((d, i) => {
@@ -392,9 +392,9 @@ export function MachineHealth() {
                     return (
                       <circle
                         key={i}
-                        cx={`${x}%`}
-                        cy={`${y}%`}
-                        r="4"
+                        cx={x}
+                        cy={y}
+                        r="2"
                         fill="hsl(199, 89%, 48%)"
                       />
                     );
@@ -442,7 +442,7 @@ export function MachineHealth() {
                 <div className="absolute top-[25%] left-0 right-0 h-px bg-yellow-500/30"></div>
                 
                 {/* Line chart */}
-                <svg className="w-full h-full" preserveAspectRatio="none">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                   <polyline
                     fill="none"
                     stroke="hsl(280, 70%, 60%)"
@@ -450,7 +450,7 @@ export function MachineHealth() {
                     points={robotHealthTimeline.map((d, i) => {
                       const x = (i / (robotHealthTimeline.length - 1)) * 100;
                       const y = 100 - ((d.avgHealth - 0.75) / 0.25) * 100;
-                      return `${x}%,${y}%`;
+                      return `${x},${y}`;
                     }).join(' ')}
                   />
                   {robotHealthTimeline.map((d, i) => {
@@ -459,9 +459,9 @@ export function MachineHealth() {
                     return (
                       <circle
                         key={i}
-                        cx={`${x}%`}
-                        cy={`${y}%`}
-                        r="4"
+                        cx={x}
+                        cy={y}
+                        r="2"
                         fill="hsl(280, 70%, 60%)"
                       />
                     );

@@ -71,20 +71,29 @@ export function Tickets() {
   const createTicketMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       console.log('[Tickets] Creating ticket with data:', data);
-      const result = await apiRequest<{ ok: boolean; ticketRef: string; ticketId: string }>('POST', '/ticket', data);
+      // Use fetch directly since /api/ticket is a public endpoint (no auth required)
+      const response = await fetch('/api/ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Tickets] API error:', response.status, errorText);
+        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
       console.log('[Tickets] API response:', result);
-      if (result.error) {
-        console.error('[Tickets] API error:', result.error);
-        throw new Error(result.error);
+      
+      if (!result.ok) {
+        throw new Error(result.message || 'Ticket creation failed');
       }
-      if (!result.data) {
-        console.error('[Tickets] No data in response');
-        throw new Error('No data returned from server');
-      }
-      if (!result.data.ok) {
-        throw new Error('Ticket creation failed');
-      }
-      return result.data;
+      
+      return result;
     },
     onSuccess: (data) => {
       toast({

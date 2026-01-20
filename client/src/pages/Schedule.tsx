@@ -403,7 +403,7 @@ export function Schedule() {
                 </div>
                 
                 {/* Risk line with points - properly positioned */}
-                <svg className="w-full h-full relative z-10" preserveAspectRatio="none">
+                <svg className="w-full h-full relative z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                   {/* Line connecting points */}
                   <polyline
                     fill="none"
@@ -411,10 +411,10 @@ export function Schedule() {
                     strokeWidth="2.5"
                     points={roboticsScheduleData.map((d, i) => {
                       const x = (i / (roboticsScheduleData.length - 1)) * 100;
-                      // Scale: 0% = bottom (100%), 30% = top (0%)
+                      // Scale: 0% = bottom (100), 30% = top (0)
                       const riskPercent = d.riskScore * 100; // Convert to percentage
                       const y = 100 - ((riskPercent / 30) * 100);
-                      return `${x}%,${y}%`;
+                      return `${x},${y}`;
                     }).join(' ')}
                   />
                   {/* Data points - purple circles with proper sizing */}
@@ -425,12 +425,12 @@ export function Schedule() {
                     return (
                       <circle
                         key={i}
-                        cx={`${x}%`}
-                        cy={`${y}%`}
-                        r="5"
+                        cx={x}
+                        cy={y}
+                        r="2"
                         fill="hsl(280, 70%, 60%)"
                         stroke="hsl(var(--card))"
-                        strokeWidth="2"
+                        strokeWidth="1"
                       />
                     );
                   })}

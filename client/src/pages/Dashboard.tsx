@@ -392,17 +392,17 @@ export function Dashboard() {
                   </div>
                   
                   {/* Line chart - shows 12% correctly positioned */}
-                  <svg className="w-full h-full relative z-10" preserveAspectRatio="none">
+                  <svg className="w-full h-full relative z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <polyline
                       fill="none"
                       stroke="hsl(142, 71%, 45%)"
                       strokeWidth="2.5"
                       points={aiRiskTimeline.map((d, i) => {
                         const x = (i / (aiRiskTimeline.length - 1)) * 100;
-                        // Scale: 0% = bottom (100%), 20% = top (0%)
-                        // For 12%: position = 100 - (12/20 * 100) = 100 - 60 = 40% from top
+                        // Scale: 0% = bottom (100), 20% = top (0)
+                        // For 12%: position = 100 - (12/20 * 100) = 100 - 60 = 40 from top
                         const y = 100 - ((d.risk / 20) * 100);
-                        return `${x}%,${y}%`;
+                        return `${x},${y}`;
                       }).join(' ')}
                     />
                     {aiRiskTimeline.map((d, i) => {
@@ -413,12 +413,12 @@ export function Dashboard() {
                       return (
                         <circle
                           key={i}
-                          cx={`${x}%`}
-                          cy={`${y}%`}
-                          r="5"
+                          cx={x}
+                          cy={y}
+                          r="2"
                           fill="hsl(142, 71%, 45%)"
                           stroke="hsl(var(--card))"
-                          strokeWidth="2"
+                          strokeWidth="1"
                         />
                       );
                     })}
