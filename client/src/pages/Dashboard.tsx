@@ -134,14 +134,14 @@ export function Dashboard() {
   
   // Per hour production breakdown (machines vs robotics) - FIXED VALUES
   // FIXED VALUES - Always use these exact numbers, never from API
-  const machineBottlesPerHourTotalFromStats = machineBottlesPerHourTotal; // FIXED: Always 1350 (never use API value)
-  const robotBottlesPerHourTotalFromStats = robotBottlesPerHourTotal; // FIXED: Always 980 (never use API value)
+  const machineBottlesPerHourTotalFromStats = machineBottlesPerHourTotal; // FIXED: Always 1350 (total for all machines)
+  const robotBottlesPerHourTotalFromStats = robotBottlesPerHourTotal; // FIXED: Always 980 (total for all robots)
   const operationalMachinesCountFromStats = operationalMachinesCount; // FIXED: Always 10
-  const machineBottlesPerHourPerMachineFromStats = machineBottlesPerHourPerMachine; // FIXED: Always 135
+  const machineBottlesPerHourPerMachineFromStats = machineBottlesPerHourPerMachine; // FIXED: Always 135 per machine
   // FIXED VALUES - NO VARIATIONS
   const hourlyProductionData = hours.map((hour) => ({
     hour,
-    machines: machineBottlesPerHourPerMachineFromStats, // Fixed: 135 per machine
+    machines: machineBottlesPerHourTotalFromStats, // Fixed: 1350 total (not per machine)
     robotics: robotBottlesPerHourTotalFromStats, // Fixed: 980 total
   }));
 
@@ -279,21 +279,21 @@ export function Dashboard() {
 
       {/* Charts Row 1: Throughput vs Target & AI Risk Timeline */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader>
-            <CardTitle>Throughput vs Target</CardTitle>
-            <CardDescription>Actual production vs target (bottles/hour)</CardDescription>
+        <Card className="border-border/50 bg-card/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Throughput vs Target</CardTitle>
+            <CardDescription className="text-sm">Actual production vs target (bottles/hour)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64 relative">
+            <div className="h-72 relative">
               <div className="absolute inset-0 flex flex-col justify-between">
-                {/* Y-axis labels - dynamic scale based on totalBottlesPerHour */}
+                {/* Y-axis labels - improved styling */}
                 {(() => {
                   const minValue = Math.round(totalBottlesPerHour * 0.90);
                   const maxValue = Math.round(totalBottlesPerHour * 1.10);
                   const step = Math.round((maxValue - minValue) / 4);
                   return (
-                    <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-2 pr-2">
+                    <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-3 pr-3 font-mono">
                       <span>{maxValue.toLocaleString()}</span>
                       <span>{(maxValue - step).toLocaleString()}</span>
                       <span>{(maxValue - step * 2).toLocaleString()}</span>
@@ -304,8 +304,8 @@ export function Dashboard() {
                 })()}
                 
                 {/* Chart area */}
-                <div className="ml-12 h-full relative">
-                  {/* Target line - fixed scale matching image */}
+                <div className="ml-14 h-full relative">
+                  {/* Target line - improved styling */}
                   {(() => {
                     const minValue = 2097;
                     const maxValue = 2563;
@@ -313,39 +313,52 @@ export function Dashboard() {
                     const targetPercent = ((targetThroughput - minValue) / range) * 100;
                     return (
                       <div 
-                        className="absolute left-0 right-0 border-t-2 border-dashed border-blue-300/60 z-10"
+                        className="absolute left-0 right-0 border-t-2 border-dashed border-blue-400/70 z-10"
                         style={{ bottom: `${targetPercent}%` }}
-                      />
+                      >
+                        <div className="absolute -left-12 -top-1.5 text-xs font-medium text-blue-400 bg-card px-1">
+                          Target
+                        </div>
+                      </div>
                     );
                   })()}
                   
-                  {/* Bars with fixed scale matching image */}
-                  <div className="absolute inset-0 flex items-end justify-between gap-2 px-2 pb-4">
+                  {/* Bars with improved styling */}
+                  <div className="absolute inset-0 flex items-end justify-between gap-3 px-3 pb-6">
                     {throughputData.map((d, i) => {
-                      // Fixed scale matching image: 2097 to 2563
                       const minValue = 2097;
                       const maxValue = 2563;
                       const range = maxValue - minValue;
                       const actualPercent = ((d.actual - minValue) / range) * 100;
-                      const targetPercent = ((d.target - minValue) / range) * 100;
                       const isAbove = d.actual >= d.target;
+                      const diff = d.actual - d.target;
+                      const diffPercent = ((diff / d.target) * 100).toFixed(1);
                       
                       return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <div className="w-full relative" style={{ height: '200px' }}>
-                            {/* Actual bar */}
-                            <div 
-                              className={`absolute bottom-0 w-full rounded-t ${
-                                isAbove ? 'bg-blue-500/80' : 'bg-yellow-500/80'
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                          <div className="w-full relative" style={{ height: '220px' }}>
+                            {/* Actual bar with gradient */}
+                            <motion.div 
+                              className={`absolute bottom-0 w-full rounded-t shadow-md ${
+                                isAbove 
+                                  ? 'bg-gradient-to-t from-green-600 to-green-500 border-t border-green-400/30' 
+                                  : 'bg-gradient-to-t from-yellow-600 to-yellow-500 border-t border-yellow-400/30'
                               }`}
-                              style={{ height: `${actualPercent}%` }}
+                              initial={{ height: 0 }}
+                              animate={{ height: `${actualPercent}%` }}
+                              transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
                             />
-                            {/* Value label */}
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-mono whitespace-nowrap">
-                              {d.actual.toLocaleString()}
+                            {/* Value label with difference */}
+                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-center">
+                              <div className="text-sm font-bold whitespace-nowrap">
+                                {d.actual.toLocaleString()}
+                              </div>
+                              <div className={`text-[10px] font-medium ${isAbove ? 'text-green-400' : 'text-yellow-400'}`}>
+                                {isAbove ? '+' : ''}{diffPercent}%
+                              </div>
                             </div>
                           </div>
-                          <span className="text-xs text-muted-foreground mt-1">{d.hour}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{d.hour}</span>
                         </div>
                       );
                     })}
@@ -353,102 +366,134 @@ export function Dashboard() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500/80 rounded"></div>
-                <span>Actual (Above Target)</span>
+            {/* Improved legend */}
+            <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-green-600 rounded shadow-sm"></div>
+                <span className="text-sm font-medium">Above Target</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-500/80 rounded"></div>
-                <span>Actual (Below Target)</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <div className="w-4 h-4 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded shadow-sm"></div>
+                <span className="text-sm font-medium">Below Target</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-primary/20 rounded"></div>
-                <span>Target: 2200</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="w-2 h-2 border-2 border-dashed border-blue-400 rounded"></div>
+                <span className="text-sm font-medium">Target: {targetThroughput.toLocaleString()}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader>
-            <CardTitle>AI Risk Score Timeline</CardTitle>
-            <CardDescription>Average failure risk across all machines (%)</CardDescription>
+        <Card className="border-border/50 bg-card/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">AI Risk Score Timeline</CardTitle>
+            <CardDescription className="text-sm">Average failure risk across all machines (%)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80 relative">
               <div className="absolute inset-0 flex flex-col justify-between">
-                {/* Y-axis labels - matching image: 10% to 30% */}
-                <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-2 pr-2">
+                {/* Y-axis labels - improved styling */}
+                <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-3 pr-3 font-mono">
                   <span>30%</span>
                   <span>25%</span>
                   <span>20%</span>
                   <span>15%</span>
                   <span>10%</span>
+                  <span>5%</span>
+                  <span>0%</span>
                 </div>
                 
-                <div className="ml-12 h-full relative">
-                  {/* Risk zones - matching image */}
+                <div className="ml-14 h-full relative">
+                  {/* Risk zones - improved gradients */}
                   <div className="absolute inset-0">
-                    {/* High risk zone (30%+) - not visible in image */}
-                    <div className="absolute top-0 left-0 right-0 bg-red-500/10" style={{ height: '0%' }} />
-                    {/* Medium risk zone (20-30%) - yellow/brown fill */}
-                    <div className="absolute top-0 left-0 right-0 bg-yellow-600/30" style={{ height: '50%', bottom: '50%' }} />
-                    {/* Low risk zone (0-20%) - green fill */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-green-500/10" style={{ height: '50%' }} />
+                    {/* High risk zone (30%+) */}
+                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-red-500/15 to-red-500/5" style={{ height: '0%' }} />
+                    {/* Medium risk zone (20-30%) */}
+                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-yellow-600/25 to-yellow-600/15" style={{ height: '33.33%', bottom: '66.67%' }} />
+                    {/* Low risk zone (0-20%) */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-green-500/15 to-green-500/5" style={{ height: '66.67%' }} />
                   </div>
                   
-                  {/* Risk line with points */}
+                  {/* Risk line with points - improved styling */}
                   <svg className="w-full h-full relative z-10" preserveAspectRatio="none">
+                    {/* Gradient definition */}
+                    <defs>
+                      <linearGradient id="riskGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="hsl(199, 89%, 48%)" />
+                        <stop offset="100%" stopColor="hsl(199, 89%, 60%)" />
+                      </linearGradient>
+                    </defs>
                     {/* Line connecting points */}
                     <polyline
                       fill="none"
-                      stroke="hsl(199, 89%, 48%)"
-                      strokeWidth="2"
+                      stroke="url(#riskGradient)"
+                      strokeWidth="3"
                       points={aiRiskTimeline.map((d, i) => {
                         const x = (i / (aiRiskTimeline.length - 1)) * 100;
-                        // Scale: 10% = bottom (100%), 30% = top (0%)
-                        const y = 100 - ((d.risk - 10) / 20) * 100;
+                        // Scale: 0% = bottom (100%), 30% = top (0%)
+                        const y = 100 - ((d.risk / 30) * 100);
                         return `${x}%,${y}%`;
                       }).join(' ')}
                     />
-                    {/* Data points */}
+                    {/* Data points with glow effect */}
                     {aiRiskTimeline.map((d, i) => {
                       const x = (i / (aiRiskTimeline.length - 1)) * 100;
-                      const y = 100 - ((d.risk - 10) / 20) * 100;
+                      const y = 100 - ((d.risk / 30) * 100);
                       return (
-                        <circle
-                          key={i}
-                          cx={`${x}%`}
-                          cy={`${y}%`}
-                          r="4"
-                          fill="hsl(199, 89%, 48%)"
-                          stroke="hsl(var(--card))"
-                          strokeWidth="1"
-                        />
+                        <g key={i}>
+                          {/* Glow effect */}
+                          <circle
+                            cx={`${x}%`}
+                            cy={`${y}%`}
+                            r="6"
+                            fill="hsl(199, 89%, 48%)"
+                            opacity="0.3"
+                          />
+                          {/* Main point */}
+                          <circle
+                            cx={`${x}%`}
+                            cy={`${y}%`}
+                            r="5"
+                            fill="hsl(199, 89%, 48%)"
+                            stroke="hsl(var(--card))"
+                            strokeWidth="2"
+                          />
+                          {/* Value label */}
+                          <text
+                            x={`${x}%`}
+                            y={`${y}%`}
+                            dy="-12"
+                            textAnchor="middle"
+                            className="text-[10px] font-bold fill-current text-cyan-400"
+                          >
+                            {d.risk.toFixed(0)}%
+                          </text>
+                        </g>
                       );
                     })}
                   </svg>
                 </div>
               </div>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground mt-2 pl-12">
+            {/* X-axis labels - improved */}
+            <div className="flex justify-between text-xs text-muted-foreground mt-3 pl-14 font-medium">
               {aiRiskTimeline.map((d, i) => (
                 <span key={i}>{d.time}</span>
               ))}
             </div>
-            <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500/20 rounded"></div>
-                <span>&lt;20% (Low Risk)</span>
+            {/* Improved legend */}
+            <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
+                <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-green-600 rounded"></div>
+                <span className="text-sm font-medium">&lt;20% (Low Risk)</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-600/30 rounded"></div>
-                <span>20-30% (Medium Risk)</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                <div className="w-4 h-4 bg-gradient-to-br from-yellow-600 to-yellow-500 rounded"></div>
+                <span className="text-sm font-medium">20-30% (Medium Risk)</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500/20 rounded"></div>
-                <span>&gt;30% (High Risk)</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-red-600 rounded"></div>
+                <span className="text-sm font-medium">&gt;30% (High Risk)</span>
               </div>
             </div>
           </CardContent>
@@ -456,71 +501,90 @@ export function Dashboard() {
       </div>
 
       {/* Production Breakdown: Machines vs Robotics per Hour */}
-      <Card className="border-border/50 bg-card/50">
-        <CardHeader>
-          <CardTitle>Production per Hour: Machines vs Robotics</CardTitle>
-          <CardDescription>Hourly bottle production breakdown by system type</CardDescription>
+      <Card className="border-border/50 bg-card/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Production per Hour: Machines vs Robotics</CardTitle>
+          <CardDescription className="text-sm">Hourly bottle production breakdown by system type</CardDescription>
         </CardHeader>
-          <CardContent>
-            <div className="h-64 relative">
-              <div className="absolute inset-0 flex flex-col justify-between">
-                {/* Y-axis labels - Fixed scale: 0-2500 bottles/hour */}
-                <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-2 pr-2">
-                  <span>2500</span>
-                  <span>2000</span>
-                  <span>1500</span>
-                  <span>1000</span>
-                  <span>500</span>
-                </div>
-                
-                <div className="ml-12 h-full relative">
-                  <div className="absolute inset-0 flex items-end justify-between gap-2 px-2 pb-4">
-                    {hourlyProductionData.map((d, i) => {
-                      const maxValue = 2500; // Fixed max value
-                      const machinePercent = Math.min(100, (d.machines / maxValue) * 100);
-                      const robotPercent = Math.min(100, (d.robotics / maxValue) * 100);
-                      const totalHeight = Math.min(100, machinePercent + robotPercent);
-                      
+        <CardContent>
+          <div className="h-72 relative">
+            <div className="absolute inset-0 flex flex-col justify-between">
+              {/* Y-axis labels - Fixed scale: 0-2500 bottles/hour */}
+              <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-3 pr-3 font-mono">
+                <span>2,500</span>
+                <span>2,000</span>
+                <span>1,500</span>
+                <span>1,000</span>
+                <span>500</span>
+                <span>0</span>
+              </div>
+              
+              <div className="ml-14 h-full relative">
+                <div className="absolute inset-0 flex items-end justify-between gap-3 px-3 pb-6">
+                  {hourlyProductionData.map((d, i) => {
+                    const maxValue = 2500; // Fixed max value
+                    const machinePercent = Math.min(100, (d.machines / maxValue) * 100);
+                    const robotPercent = Math.min(100, (d.robotics / maxValue) * 100);
+                    const total = d.machines + d.robotics;
+                    
                 return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <div className="w-full relative" style={{ height: '200px' }}>
-                            {/* Stacked bars - machines on bottom, robotics on top */}
-                            <div 
-                              className="absolute bottom-0 w-full bg-blue-500/80 rounded-t"
-                              style={{ height: `${machinePercent}%` }}
+                      <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                        <div className="w-full relative" style={{ height: '220px' }}>
+                          {/* Stacked bars - machines on bottom, robotics on top */}
+                          <div className="absolute bottom-0 w-full rounded-t overflow-hidden shadow-sm">
+                            {/* Machines bar (blue) */}
+                            <motion.div 
+                              className="w-full bg-gradient-to-t from-blue-600 to-blue-500 border-t border-blue-400/30"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${machinePercent}%` }}
+                              transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
                             />
-                            <div 
-                              className="absolute w-full bg-purple-500/80 rounded-t"
+                            {/* Robotics bar (purple) */}
+                            <motion.div 
+                              className="w-full bg-gradient-to-t from-purple-600 to-purple-500 border-t border-purple-400/30"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${robotPercent}%` }}
+                              transition={{ duration: 0.8, delay: i * 0.05 + 0.2, ease: "easeOut" }}
                               style={{ 
-                                height: `${robotPercent}%`,
                                 bottom: `${machinePercent}%`
                               }}
                             />
-                            {/* Value labels */}
-                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-mono whitespace-nowrap text-center">
-                              <div className="text-blue-400">M: {d.machines}</div>
-                              <div className="text-purple-400">R: {d.robotics}</div>
+                          </div>
+                          
+                          {/* Value labels - better positioned */}
+                          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-center space-y-0.5">
+                            <div className="text-xs font-semibold text-blue-300 whitespace-nowrap">
+                              M: {d.machines.toLocaleString()}
+                            </div>
+                            <div className="text-xs font-semibold text-purple-300 whitespace-nowrap">
+                              R: {d.robotics.toLocaleString()}
+                            </div>
+                            <div className="text-[10px] font-medium text-muted-foreground mt-1">
+                              Total: {total.toLocaleString()}
                             </div>
                           </div>
-                          <span className="text-xs text-muted-foreground mt-1">{d.hour}</span>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <span className="text-xs font-medium text-muted-foreground mt-1">{d.hour}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500/80 rounded"></div>
-                <span>Machines: {machineBottlesPerHourTotal.toLocaleString()}/hr</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-purple-500/80 rounded"></div>
-                <span>Robotics: {robotBottlesPerHourTotal.toLocaleString()}/hr</span>
-              </div>
+          </div>
+          
+          {/* Legend - improved styling */}
+          <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded shadow-sm"></div>
+              <span className="text-sm font-medium">Machines: {machineBottlesPerHourTotal.toLocaleString()}/hr</span>
             </div>
-          </CardContent>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded shadow-sm"></div>
+              <span className="text-sm font-medium">Robotics: {robotBottlesPerHourTotal.toLocaleString()}/hr</span>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Labor & Cost Metrics */}
@@ -622,67 +686,99 @@ export function Dashboard() {
 
       {/* Charts Row 2: Downtime Reasons & Defects by Type */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader>
-            <CardTitle>Downtime Reasons</CardTitle>
-            <CardDescription>Breakdown of downtime causes (today)</CardDescription>
+        <Card className="border-border/50 bg-card/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Downtime Reasons</CardTitle>
+            <CardDescription className="text-sm">Breakdown of downtime causes (today)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {downtimeReasons.map((reason, i) => (
-                <div key={reason.reason} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{reason.reason}</span>
-                    <span className="text-muted-foreground">{reason.minutes} min ({reason.percentage}%)</span>
-                  </div>
-                  <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
+              {downtimeReasons.map((reason, i) => {
+                const colors = [
+                  'from-blue-600 to-blue-500',
+                  'from-purple-600 to-purple-500',
+                  'from-orange-600 to-orange-500',
+                  'from-pink-600 to-pink-500',
+                  'from-gray-600 to-gray-500',
+                ];
+                return (
+                  <div key={reason.reason} className="space-y-2 group">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-foreground">{reason.reason}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground font-medium">{reason.minutes} min</span>
+                        <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-bold">
+                          {reason.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-muted/30 rounded-full overflow-hidden shadow-inner">
                       <motion.div
-                        className="h-full bg-primary rounded-full"
+                        className={`h-full bg-gradient-to-r ${colors[i % colors.length]} rounded-full shadow-sm`}
                         initial={{ width: 0 }}
-                      animate={{ width: `${reason.percentage}%` }}
-                        transition={{ duration: 0.6, delay: i * 0.1 }}
+                        animate={{ width: `${reason.percentage}%` }}
+                        transition={{ duration: 0.8, delay: i * 0.1, ease: "easeOut" }}
                       />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-            <div className="mt-4 pt-4 border-t border-border/50">
+            <div className="mt-6 pt-4 border-t border-border/50 bg-muted/20 rounded-lg p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total Downtime</span>
-                <span className="text-lg font-bold">{downtimeReasons.reduce((sum, r) => sum + r.minutes, 0)} minutes</span>
+                <span className="text-sm font-semibold text-muted-foreground">Total Downtime</span>
+                <span className="text-2xl font-bold text-primary">
+                  {downtimeReasons.reduce((sum, r) => sum + r.minutes, 0)} <span className="text-base font-normal text-muted-foreground">minutes</span>
+                </span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50">
-          <CardHeader>
-            <CardTitle>Defects by Type</CardTitle>
-            <CardDescription>Quality issues breakdown (today)</CardDescription>
+        <Card className="border-border/50 bg-card/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Defects by Type</CardTitle>
+            <CardDescription className="text-sm">Quality issues breakdown (today)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {defectTypes.map((defect, i) => (
-                <div key={defect.type} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{defect.type}</span>
-                    <span className="text-muted-foreground">{defect.count} bottles ({defect.percentage}%)</span>
+              {defectTypes.map((defect, i) => {
+                const colors = [
+                  'from-red-600 to-red-500',
+                  'from-orange-600 to-orange-500',
+                  'from-amber-600 to-amber-500',
+                  'from-rose-600 to-rose-500',
+                  'from-pink-600 to-pink-500',
+                ];
+                return (
+                  <div key={defect.type} className="space-y-2 group">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-foreground">{defect.type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground font-medium">{defect.count} bottles</span>
+                        <span className="px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 text-xs font-bold">
+                          {defect.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-muted/30 rounded-full overflow-hidden shadow-inner">
+                      <motion.div
+                        className={`h-full bg-gradient-to-r ${colors[i % colors.length]} rounded-full shadow-sm`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${defect.percentage}%` }}
+                        transition={{ duration: 0.8, delay: i * 0.1, ease: "easeOut" }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-red-500/70 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${defect.percentage}%` }}
-                      transition={{ duration: 0.6, delay: i * 0.1 }}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-            <div className="mt-4 pt-4 border-t border-border/50">
+            <div className="mt-6 pt-4 border-t border-border/50 bg-red-500/10 rounded-lg p-4 border-red-500/20">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total Defects</span>
-                <span className="text-lg font-bold text-red-400">{defectTypes.reduce((sum, d) => sum + d.count, 0)} bottles</span>
+                <span className="text-sm font-semibold text-muted-foreground">Total Defects</span>
+                <span className="text-2xl font-bold text-red-400">
+                  {defectTypes.reduce((sum, d) => sum + d.count, 0)} <span className="text-base font-normal text-muted-foreground">bottles</span>
+                </span>
               </div>
             </div>
           </CardContent>
