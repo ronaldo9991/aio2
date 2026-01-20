@@ -23,7 +23,7 @@ Add these to your Railway project settings (Project Settings → Variables):
 BASE_URL=https://aio2-production.up.railway.app
 
 # n8n Webhook Configuration
-N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook/7ca8565a-7a16-4820-b6d2-4a30460f589c
+N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 N8N_SHARED_SECRET=your-secure-random-string-here
 
 # Railway Inbound API Key (for n8n to call back)

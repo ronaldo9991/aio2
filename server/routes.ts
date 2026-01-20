@@ -327,17 +327,18 @@ export async function registerRoutes(
       );
 
       // Notify n8n asynchronously (non-blocking)
+      // Payload structure matches n8n webhook requirements
       const { notifyN8nTicketCreated } = await import("./services/n8nWebhook");
       notifyN8nTicketCreated({
         ticketRef,
         ticketId: ticket.id,
-        ticketUrl: `${BASE_URL}/api/ticket/${ticketRef}`,
+        subject: input.subject,
+        message: input.message,
         customerName: input.customerName,
         customerPhone: input.customerPhone,
         customerEmail: input.customerEmail,
-        subject: input.subject,
-        message: input.message,
         priority: input.priority,
+        ticketUrl: `${BASE_URL}/ticket/${ticketRef}`,
         createdAt: now.toISOString(),
       }).catch((err) => {
         console.error("[API] Failed to notify n8n (non-blocking):", err);

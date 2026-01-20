@@ -3,16 +3,20 @@
  * Handles secure webhook calls to n8n with retry logic
  */
 
+/**
+ * n8n Webhook Payload Structure
+ * Matches the exact format required by n8n webhook
+ */
 interface WebhookPayload {
   ticketRef: string;
   ticketId: string;
-  ticketUrl: string;
+  subject: string;
+  message: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string;
-  subject: string;
-  message: string;
   priority: string;
+  ticketUrl: string;
   createdAt: string;
 }
 
