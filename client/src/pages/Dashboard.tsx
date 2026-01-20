@@ -378,11 +378,10 @@ export function Dashboard() {
                 <div className="absolute left-0 top-0 bottom-10 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
                   <span className="font-medium">20%</span>
                   <span className="font-medium">15%</span>
-                  <span className="font-medium text-green-400 font-bold">12%</span>
                   <span className="font-medium">10%</span>
                   <span className="font-medium">5%</span>
                   <span className="font-medium">0%</span>
-                    </div>
+                </div>
                 
                 {/* Chart area */}
                 <div className="ml-14 mr-4 h-full relative">
@@ -392,7 +391,7 @@ export function Dashboard() {
                     <div className="absolute bottom-0 left-0 right-0 bg-green-500/10" style={{ height: '75%' }} />
                   </div>
                   
-                  {/* Line chart - FIXED to show 12% correctly */}
+                  {/* Line chart - shows 12% correctly positioned */}
                   <svg className="w-full h-full relative z-10" preserveAspectRatio="none">
                     <polyline
                       fill="none"
@@ -412,25 +411,15 @@ export function Dashboard() {
                       const riskValue = 12; // Force 12%
                       const y = 100 - ((riskValue / 20) * 100);
                       return (
-                        <g key={i}>
-                          <circle
-                            cx={`${x}%`}
-                            cy={`${y}%`}
-                            r="5"
-                            fill="hsl(142, 71%, 45%)"
-                            stroke="hsl(var(--card))"
-                            strokeWidth="2"
-                          />
-                          <text
-                            x={`${x}%`}
-                            y={`${y}%`}
-                            dy="-10"
-                            textAnchor="middle"
-                            className="text-xs font-bold fill-green-400"
-                          >
-                            12%
-                          </text>
-                        </g>
+                        <circle
+                          key={i}
+                          cx={`${x}%`}
+                          cy={`${y}%`}
+                          r="5"
+                          fill="hsl(142, 71%, 45%)"
+                          stroke="hsl(var(--card))"
+                          strokeWidth="2"
+                        />
                       );
                     })}
                   </svg>
@@ -524,7 +513,7 @@ export function Dashboard() {
                               }}
                             />
                           </div>
-                        </div>
+                    </div>
                         
                         {/* Hour label */}
                         <div className="mt-3 text-xs font-medium text-muted-foreground">{d.hour}</div>
