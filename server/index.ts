@@ -1,5 +1,4 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
@@ -59,8 +58,38 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (register before routes so it's available even if routes fail)
+app.get("/api/health", async (req: Request, res: Response) => {
+  res.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 (async () => {
-  await registerRoutes(httpServer, app);
+  try {
+    // Dynamically import routes to catch module load errors (e.g., missing SESSION_SECRET)
+    const { registerRoutes } = await import("./routes");
+    await registerRoutes(httpServer, app);
+  } catch (error: any) {
+    log(`Failed to register routes: ${error.message}`, "error");
+    // Add error route to inform about missing configuration
+    app.use("/api/*", (req: Request, res: Response) => {
+      if (error.message?.includes("SESSION_SECRET")) {
+        res.status(500).json({ 
+          error: "Server configuration error",
+          message: "SESSION_SECRET environment variable is required. Please set it in Railway project settings.",
+          hint: "Go to Railway → Project Settings → Variables → Add SESSION_SECRET"
+        });
+      } else {
+        res.status(500).json({ 
+          error: "Server configuration error",
+          message: error.message || "Failed to initialize routes"
+        });
+      }
+    });
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

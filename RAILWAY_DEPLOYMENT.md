@@ -2,13 +2,20 @@
 
 This application is configured to deploy on Railway with port 8080.
 
-## Environment Variables
+## ⚠️ CRITICAL: Environment Variables
 
-Set these in your Railway project settings:
+**YOU MUST SET THESE IN YOUR RAILWAY PROJECT SETTINGS BEFORE DEPLOYMENT:**
 
-- `PORT=8080` (Railway will set this automatically, but you can override if needed)
-- `SESSION_SECRET=your-secret-key-here` (Required - use a strong random string)
-- `NODE_ENV=production` (Set automatically by Railway)
+1. **`SESSION_SECRET`** (REQUIRED) - The application will **NOT START** without this.
+   - Generate a strong random string (at least 32 characters)
+   - Example: `openssl rand -hex 32` or use a password generator
+   - Set this in Railway: Project Settings → Variables → Add `SESSION_SECRET`
+
+2. **`PORT`** - Railway sets this automatically (defaults to 8080), but you can override if needed
+
+3. **`NODE_ENV`** - Set automatically by Railway to `production`
+
+**If `SESSION_SECRET` is missing, the server will crash immediately on startup.**
 
 ## Build & Deploy
 
@@ -31,8 +38,40 @@ Railway will automatically check if the service is running on the configured por
 
 ## Troubleshooting
 
-If deployment fails:
-1. Check Railway logs for build errors
-2. Ensure `SESSION_SECRET` is set
-3. Verify `npm run build` completes successfully locally
-4. Check that port 8080 is accessible (Railway handles this automatically)
+### Server Crashes on Startup
+
+**Most Common Issue: Missing `SESSION_SECRET`**
+- Error in logs: `SESSION_SECRET environment variable is required`
+- **Solution**: Go to Railway Project Settings → Variables → Add `SESSION_SECRET` with a strong random string
+- The server checks for this variable at startup and will crash if it's missing
+
+### Other Common Issues
+
+1. **Build Errors**: Check Railway build logs for TypeScript or dependency errors
+2. **Module Not Found**: Ensure all dependencies are in `package.json` (not just devDependencies)
+3. **Port Issues**: Railway automatically handles port 8080, but verify `PORT` env var if needed
+4. **Health Check Fails**: The `/api/health` endpoint should return `{ status: "ok" }` - if it doesn't, check server logs
+
+### Testing Locally Before Deployment
+
+```bash
+# Set SESSION_SECRET
+export SESSION_SECRET="your-test-secret-key-here"
+
+# Build
+npm run build
+
+# Test production build
+npm start
+
+# Test health endpoint
+curl http://localhost:8080/api/health
+```
+
+### Railway Logs
+
+Check Railway deployment logs for:
+- Build errors during `npm run build`
+- Runtime errors during `npm start`
+- Missing environment variables
+- Port binding issues
