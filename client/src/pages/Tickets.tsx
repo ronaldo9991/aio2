@@ -41,6 +41,8 @@ interface TicketItem {
 
 export function Tickets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -95,6 +97,56 @@ export function Tickets() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to create ticket',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await apiRequest('DELETE', `/tickets/${id}`);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Ticket Deleted',
+        description: 'Ticket has been deleted successfully.',
+      });
+      setDeleteTicketId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete ticket',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteAllTicketsMutation = useMutation({
+    mutationFn: async () => {
+      const result = await apiRequest('DELETE', '/tickets');
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: 'All Tickets Deleted',
+        description: data?.message || 'All tickets have been deleted successfully.',
+      });
+      setIsDeleteAllDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete tickets',
         variant: 'destructive',
       });
     },

@@ -248,6 +248,19 @@ export async function registerRoutes(
     res.json(tickets);
   });
 
+  app.delete("/api/tickets/:id", authMiddleware, async (req: Request, res: Response) => {
+    const deleted = await storage.deleteTicket(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    res.json({ ok: true, message: "Ticket deleted" });
+  });
+
+  app.delete("/api/tickets", authMiddleware, async (req: Request, res: Response) => {
+    const count = await storage.deleteAllTickets();
+    res.json({ ok: true, message: `Deleted ${count} tickets` });
+  });
+
   app.post("/api/tickets", authMiddleware, async (req: Request, res: Response) => {
     const { type, entityType, entityId, assignedTo, dueBy, policyJson } = req.body;
     

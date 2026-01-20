@@ -37,6 +37,8 @@ export interface IStorage {
   getTicketByRef(ticketRef: string): Promise<Ticket | undefined>;
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicketStatus(id: string, status: string): Promise<Ticket | undefined>;
+  deleteTicket(id: string): Promise<boolean>;
+  deleteAllTickets(): Promise<number>;
   // Customer ticket methods
   createCustomerTicket(ticket: InsertTicket, initialMessage: InsertTicketMessage): Promise<{ ticket: Ticket; message: TicketMessage }>;
   getTicketWithMessages(ticketRef: string): Promise<{ ticket: Ticket; messages: TicketMessage[] } | undefined>;
