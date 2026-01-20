@@ -368,94 +368,78 @@ export function Schedule() {
         </CardContent>
       </Card>
 
-      {/* AI Risk Score for Robotics */}
+      {/* Job Completion Rate */}
       <Card className="border-border/50 bg-card/50">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Bot className="w-5 h-5 text-purple-400" />
-            AI Risk Score for Robotics
+            <Target className="w-5 h-5 text-primary" />
+            Job Completion Rate
           </CardTitle>
-          <CardDescription className="text-sm">Average failure risk across all robotics (%)</CardDescription>
+          <CardDescription className="text-sm">On-time completion percentage by hour</CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="h-[450px] relative">
-            <div className="absolute inset-0 flex flex-col justify-between">
-              {/* Y-axis labels - 0% to 30% with proper spacing */}
-              <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-8 pr-4 w-14">
-                <span className="text-right font-mono">30%</span>
-                <span className="text-right font-mono">25%</span>
-                <span className="text-right font-mono">20%</span>
-                <span className="text-right font-mono">15%</span>
-                <span className="text-right font-mono">10%</span>
-                <span className="text-right font-mono">5%</span>
-                <span className="text-right font-mono">0%</span>
+          <div className="h-[400px] relative">
+            <div className="absolute inset-0 flex flex-col">
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 bottom-10 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
+                <span className="font-medium">100%</span>
+                <span className="font-medium">90%</span>
+                <span className="font-medium">80%</span>
+                <span className="font-medium">70%</span>
+                <span className="font-medium">60%</span>
+                <span className="font-medium">50%</span>
               </div>
               
-              <div className="ml-16 h-full relative pr-6">
-                {/* Risk zones - properly sized and colored */}
-                <div className="absolute inset-0">
-                  {/* High risk zone (30%+) */}
-                  <div className="absolute top-0 left-0 right-0 bg-red-500/10" style={{ height: '0%' }} />
-                  {/* Medium risk zone (20-30%) - brown/yellow fill matching image */}
-                  <div className="absolute top-0 left-0 right-0 bg-yellow-700/40" style={{ height: '33.33%', bottom: '66.67%' }} />
-                  {/* Low risk zone (0-20%) - dark green fill matching image */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-green-600/20" style={{ height: '66.67%' }} />
-                </div>
+              {/* Chart area */}
+              <div className="ml-14 mr-4 h-full relative">
+                {/* Target line */}
+                <div 
+                  className="absolute left-0 right-0 border-t border-dashed border-green-400/50 z-10"
+                  style={{ bottom: `${(kpis.onTimeRate * 100)}%` }}
+                />
                 
-                {/* Risk line with points - properly positioned */}
-                <svg className="w-full h-full relative z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  {/* Line connecting points */}
-                  <polyline
-                    fill="none"
-                    stroke="hsl(280, 70%, 60%)"
-                    strokeWidth="2.5"
-                    points={roboticsScheduleData.map((d, i) => {
-                      const x = (i / (roboticsScheduleData.length - 1)) * 100;
-                      // Scale: 0% = bottom (100), 30% = top (0)
-                      const riskPercent = d.riskScore * 100; // Convert to percentage
-                      const y = 100 - ((riskPercent / 30) * 100);
-                      return `${x},${y}`;
-                    }).join(' ')}
-                  />
-                  {/* Data points - purple circles with proper sizing */}
-                  {roboticsScheduleData.map((d, i) => {
-                    const x = (i / (roboticsScheduleData.length - 1)) * 100;
-                    const riskPercent = d.riskScore * 100;
-                    const y = 100 - ((riskPercent / 30) * 100);
+                {/* Bars */}
+                <div className="absolute inset-0 flex items-end justify-between gap-2 pb-10">
+                  {hours.map((hour, i) => {
+                    // On-time rate varies slightly but averages to kpis.onTimeRate
+                    const onTimeRate = (kpis.onTimeRate * 100) + (i % 3) - 1; // 91-93% range around 92%
+                    const height = Math.max(50, Math.min(100, onTimeRate));
+                    
                     return (
-                      <circle
-                        key={i}
-                        cx={x}
-                        cy={y}
-                        r="2"
-                        fill="hsl(280, 70%, 60%)"
-                        stroke="hsl(var(--card))"
-                        strokeWidth="1"
-                      />
+                      <div key={i} className="flex-1 flex flex-col items-center h-full">
+                        <div className="mb-2 text-sm font-semibold">{height.toFixed(0)}%</div>
+                        <div className="flex-1 w-full flex items-end min-h-[200px]">
+                          <motion.div 
+                            className={`w-full rounded-t ${
+                              height >= 90 ? 'bg-green-500' : 
+                              height >= 80 ? 'bg-yellow-500' : 
+                              'bg-red-500'
+                            }`}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${height}%` }}
+                            transition={{ duration: 0.6, delay: i * 0.05 }}
+                            style={{ minHeight: '2px' }}
+                          />
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">{hour}</div>
+                      </div>
                     );
                   })}
-                </svg>
+                </div>
               </div>
             </div>
-            {/* X-axis labels - properly spaced and aligned */}
-            <div className="flex justify-between text-xs text-muted-foreground mt-8 pl-16 pr-6">
-              {roboticsScheduleData.map((d, i) => (
-                <span key={i} className="text-xs font-mono">{d.hour}</span>
-              ))}
-            </div>
-            {/* Legend - properly spaced at bottom */}
-            <div className="flex items-center gap-8 mt-8 text-xs text-muted-foreground pl-16">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-600/20 rounded"></div>
-                <span>&lt;20% (Low Risk)</span>
+          </div>
+          {/* Summary */}
+          <div className="mt-6 pt-4 border-t">
+            <div className="flex items-center justify-center gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{(kpis.onTimeRate * 100).toFixed(0)}%</div>
+                <div className="text-xs text-muted-foreground mt-1">Overall On-Time Rate</div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-700/40 rounded"></div>
-                <span>20-30% (Medium Risk)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500/20 rounded"></div>
-                <span>&gt;30% (High Risk)</span>
+              <div className="h-12 w-px bg-border"></div>
+              <div className="text-center">
+                <div className="text-sm font-semibold text-green-400">Target: 90%+</div>
+                <div className="text-xs text-muted-foreground mt-1">Performance Goal</div>
               </div>
             </div>
           </div>

@@ -469,32 +469,32 @@ export function Dashboard() {
               <RadarChart data={[
                 {
                   category: 'Production',
-                  Machines: 75,
-                  Robotics: 85,
+                  Machines: 58, // 1350/2330 * 100 = 58%
+                  Robotics: 42, // 980/2330 * 100 = 42%
                   fullMark: 100,
                 },
                 {
                   category: 'Efficiency',
-                  Machines: 70,
-                  Robotics: 92,
+                  Machines: 84, // From Energy page: 84% efficiency
+                  Robotics: 91, // From Energy page: 91% efficiency
                   fullMark: 100,
                 },
                 {
                   category: 'Utilization',
-                  Machines: 84,
-                  Robotics: 95,
+                  Machines: 84, // Fixed: 84% utilization
+                  Robotics: 95, // Fixed: 95% utilization
                   fullMark: 100,
                 },
                 {
                   category: 'Cost',
-                  Machines: 88,
-                  Robotics: 72,
+                  Machines: 89, // Normalized: (0.085/0.095) * 100 = 89% (lower cost per bottle = higher score)
+                  Robotics: 100, // Normalized: 0.085 cost per bottle (best, so 100%)
                   fullMark: 100,
                 },
                 {
                   category: 'Reliability',
-                  Machines: 90,
-                  Robotics: 78,
+                  Machines: 97, // 3 defects per 100 = 97% reliability
+                  Robotics: 100, // 0 defects per 100 = 100% reliability
                   fullMark: 100,
                 },
               ]}>
@@ -669,8 +669,8 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={hours.map((hour, i) => ({
                 hour,
-                Machines: 84 + (i % 3) - 1, // 83-85% range
-                Robotics: 95 + (i % 2) - 0.5, // 94.5-95.5% range
+                Machines: dashboardStats.machineUtilization * 100, // Fixed: 84% (from dashboardStats)
+                Robotics: 95, // Fixed: 95% utilization (matches Radial chart)
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
