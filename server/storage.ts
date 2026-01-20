@@ -5,7 +5,10 @@ import {
   type Alert, type InsertAlert,
   type Ticket, type InsertTicket,
   type Approval, type InsertApproval,
-  type AuditLog, type InsertAuditLog
+  type AuditLog, type InsertAuditLog,
+  type Dataset, type InsertDataset,
+  type MLModel, type InsertMLModel,
+  type Recommendation, type InsertRecommendation
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -39,6 +42,22 @@ export interface IStorage {
   updateApprovalStatus(id: string, status: string, approvedBy: string): Promise<Approval | undefined>;
   
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  
+  // New methods for datasets, models, recommendations
+  getDatasets(): Promise<Dataset[]>;
+  getDataset(id: string): Promise<Dataset | undefined>;
+  createDataset(dataset: InsertDataset): Promise<Dataset>;
+  deleteDataset(id: string): Promise<boolean>;
+  
+  getMLModels(): Promise<MLModel[]>;
+  getMLModel(id: string): Promise<MLModel | undefined>;
+  createMLModel(model: InsertMLModel): Promise<MLModel>;
+  updateMLModel(id: string, updates: Partial<MLModel>): Promise<MLModel | undefined>;
+  
+  getRecommendations(): Promise<Recommendation[]>;
+  getRecommendation(id: string): Promise<Recommendation | undefined>;
+  createRecommendation(rec: InsertRecommendation): Promise<Recommendation>;
+  updateRecommendationStatus(id: string, status: string, userId?: string, overrideReason?: string): Promise<Recommendation | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -49,6 +68,9 @@ export class MemStorage implements IStorage {
   private tickets: Map<string, Ticket>;
   private approvals: Map<string, Approval>;
   private auditLogs: Map<string, AuditLog>;
+  private datasets: Map<string, Dataset>;
+  private mlModels: Map<string, MLModel>;
+  private recommendations: Map<string, Recommendation>;
 
   constructor() {
     this.users = new Map();
@@ -58,11 +80,91 @@ export class MemStorage implements IStorage {
     this.tickets = new Map();
     this.approvals = new Map();
     this.auditLogs = new Map();
+    this.datasets = new Map();
+    this.mlModels = new Map();
+    this.recommendations = new Map();
     
     this.seedData();
+    this.seedMLModels();
+  }
+
+  private seedMLModels() {
+    const now = new Date();
+    const models: MLModel[] = [
+      {
+        id: randomUUID(),
+        name: 'failure_risk',
+        type: 'classification',
+        version: 1,
+        status: 'active',
+        datasetId: null,
+        trainedAt: now,
+        trainedBy: 'system',
+        metricsJson: {
+          accuracy: 0.88,
+          precision: 0.85,
+          recall: 0.90,
+          f1: 0.87,
+        },
+        featureImportanceJson: [
+          { feature: 'vibration', importance: 0.35 },
+          { feature: 'temperature', importance: 0.28 },
+          { feature: 'daysSinceMaintenance', importance: 0.22 },
+          { feature: 'powerDraw', importance: 0.15 },
+        ],
+        configJson: {},
+      },
+      {
+        id: randomUUID(),
+        name: 'throughput_forecaster',
+        type: 'forecast',
+        version: 1,
+        status: 'active',
+        datasetId: null,
+        trainedAt: now,
+        trainedBy: 'system',
+        metricsJson: {
+          mae: 150,
+          rmse: 200,
+          mape: 0.12,
+        },
+        featureImportanceJson: [
+          { feature: 'previous_day_throughput', importance: 0.60 },
+          { feature: 'machine_status', importance: 0.30 },
+          { feature: 'day_of_week', importance: 0.10 },
+        ],
+        configJson: {},
+      },
+      {
+        id: randomUUID(),
+        name: 'quality_anomaly_detector',
+        type: 'anomaly',
+        version: 1,
+        status: 'active',
+        datasetId: null,
+        trainedAt: now,
+        trainedBy: 'system',
+        metricsJson: {
+          contamination: 0.01,
+          outliers_detected: 15,
+          precision: 0.92,
+        },
+        featureImportanceJson: [
+          { feature: 'bottleWeightG', importance: 0.50 },
+          { feature: 'wallThicknessMm', importance: 0.40 },
+          { feature: 'neckDiameterMm', importance: 0.10 },
+        ],
+        configJson: {},
+      },
+    ];
+
+    models.forEach(model => {
+      this.mlModels.set(model.id, model);
+    });
   }
 
   private async seedData() {
+    // Create users
     const hashedPassword = await bcrypt.hash("admin123", 10);
     const adminUser: User = {
       id: randomUUID(),
@@ -73,6 +175,25 @@ export class MemStorage implements IStorage {
     };
     this.users.set(adminUser.id, adminUser);
 
+    const operatorUser: User = {
+      id: randomUUID(),
+      email: "operator@aquaintel.com",
+      password: await bcrypt.hash("operator123", 10),
+      role: "operator",
+      createdAt: new Date(),
+    };
+    this.users.set(operatorUser.id, operatorUser);
+
+    const supervisorUser: User = {
+      id: randomUUID(),
+      email: "supervisor@aquaintel.com",
+      password: await bcrypt.hash("supervisor123", 10),
+      role: "supervisor",
+      createdAt: new Date(),
+    };
+    this.users.set(supervisorUser.id, supervisorUser);
+
+    // Create comprehensive machine data
     const machines: InsertMachine[] = [
       { name: "Blow Molder A", type: "blow_mold", status: "operational", setupGroup: "A" },
       { name: "Blow Molder B", type: "blow_mold", status: "operational", setupGroup: "A" },
@@ -80,32 +201,133 @@ export class MemStorage implements IStorage {
       { name: "Blow Molder C", type: "blow_mold", status: "operational", setupGroup: "A" },
       { name: "Preform Line", type: "preform", status: "maintenance", setupGroup: "C" },
       { name: "Packing Station", type: "packing", status: "operational", setupGroup: "D" },
+      { name: "Blow Molder D", type: "blow_mold", status: "operational", setupGroup: "A" },
+      { name: "Injection Molder 2", type: "injection", status: "operational", setupGroup: "B" },
+      { name: "Blow Molder E", type: "blow_mold", status: "warning", setupGroup: "A" },
+      { name: "Labeling Station", type: "packing", status: "operational", setupGroup: "D" },
     ];
 
     machines.forEach((m, i) => {
-      const id = `M-00${i + 1}`;
+      const id = `M-${String(i + 1).padStart(3, '0')}`;
       this.machines.set(id, { ...m, id });
     });
 
-    const alertData: Omit<Alert, "id">[] = [
-      { ts: new Date(), severity: "CRITICAL", type: "MACHINE_FAILURE", entityType: "machine", entityId: "M-003", message: "High vibration detected - potential bearing failure", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
-      { ts: new Date(), severity: "WARNING", type: "QUALITY_DRIFT", entityType: "machine", entityId: "M-002", message: "Wall thickness approaching UCL", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
-      { ts: new Date(), severity: "INFO", type: "SCHEDULE", entityType: "job", entityId: "J-015", message: "Job priority automatically upgraded due to due date", acknowledgedBy: "admin", acknowledgedAt: new Date(), dedupeKey: null },
+    // Create comprehensive job data (60 jobs)
+    const now = new Date();
+    const jobTemplates = [
+      { productSize: "500ml", quantity: 5000, processingTimeMin: 180, priority: 1, isUrgent: false },
+      { productSize: "1L", quantity: 3000, processingTimeMin: 240, priority: 2, isUrgent: false },
+      { productSize: "250ml", quantity: 8000, processingTimeMin: 150, priority: 1, isUrgent: false },
+      { productSize: "750ml", quantity: 4000, processingTimeMin: 200, priority: 2, isUrgent: false },
+      { productSize: "2L", quantity: 2000, processingTimeMin: 300, priority: 3, isUrgent: true },
+      { productSize: "500ml", quantity: 6000, processingTimeMin: 180, priority: 1, isUrgent: false },
+      { productSize: "1L", quantity: 3500, processingTimeMin: 240, priority: 2, isUrgent: false },
+      { productSize: "250ml", quantity: 10000, processingTimeMin: 150, priority: 1, isUrgent: false },
     ];
 
-    alertData.forEach((a, i) => {
-      const id = `A-00${i + 1}`;
+    const machineTypes = ["blow_mold", "injection", "blow_mold", "blow_mold", "blow_mold", "injection"];
+    const setupGroups = ["A", "A", "B", "A", "A", "B"];
+    const moldIds = ["MOLD-001", "MOLD-002", "MOLD-003", "MOLD-004", "MOLD-005", "MOLD-006"];
+
+    for (let i = 0; i < 60; i++) {
+      const template = jobTemplates[i % jobTemplates.length];
+      const daysOffset = Math.floor(i / 8) + (i % 3);
+      const dueDate = new Date(now);
+      dueDate.setDate(dueDate.getDate() + daysOffset);
+      dueDate.setHours(17, 0, 0, 0); // 5 PM due time
+
+      const job: InsertJob = {
+        productSize: template.productSize,
+        quantity: template.quantity + Math.floor(Math.random() * 1000 - 500),
+        dueDate,
+        priority: template.priority + (Math.random() > 0.8 ? 1 : 0),
+        processingTimeMin: template.processingTimeMin + Math.floor(Math.random() * 30 - 15),
+        requiredMachineType: machineTypes[i % machineTypes.length],
+        moldId: moldIds[i % moldIds.length],
+        setupGroup: setupGroups[i % setupGroups.length],
+        isUrgent: template.isUrgent || (daysOffset <= 1 && Math.random() > 0.7),
+      };
+
+      await this.createJob(job);
+    }
+
+    // Create comprehensive alert data (25 alerts)
+    const alertData: Omit<Alert, "id">[] = [
+      { ts: new Date(now.getTime() - 2 * 60 * 60 * 1000), severity: "CRITICAL", type: "MACHINE_FAILURE", entityType: "machine", entityId: "M-003", message: "High vibration detected (5.8 mm/s) - potential bearing failure on Injection Molder 1", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "vib-M-003" },
+      { ts: new Date(now.getTime() - 4 * 60 * 60 * 1000), severity: "WARNING", type: "QUALITY_DRIFT", entityType: "machine", entityId: "M-002", message: "Wall thickness approaching UCL (0.45mm) on Blow Molder B", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "quality-M-002" },
+      { ts: new Date(now.getTime() - 6 * 60 * 60 * 1000), severity: "INFO", type: "SCHEDULE", entityType: "job", entityId: "J-015", message: "Job priority automatically upgraded due to due date approaching", acknowledgedBy: adminUser.id, acknowledgedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000), dedupeKey: null },
+      { ts: new Date(now.getTime() - 8 * 60 * 60 * 1000), severity: "WARNING", type: "TEMPERATURE", entityType: "machine", entityId: "M-009", message: "Operating temperature elevated (215°C) on Blow Molder E", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "temp-M-009" },
+      { ts: new Date(now.getTime() - 10 * 60 * 60 * 1000), severity: "CRITICAL", type: "QUALITY_DEFECT", entityType: "machine", entityId: "M-001", message: "Multiple thin_wall defects detected in last 50 bottles", acknowledgedBy: supervisorUser.id, acknowledgedAt: new Date(now.getTime() - 9 * 60 * 60 * 1000), dedupeKey: "defect-M-001" },
+      { ts: new Date(now.getTime() - 12 * 60 * 60 * 1000), severity: "WARNING", type: "SCHEDULE", entityType: "job", entityId: "J-028", message: "Job at risk of missing due date - requires expedited processing", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 14 * 60 * 60 * 1000), severity: "INFO", type: "MAINTENANCE", entityType: "machine", entityId: "M-005", message: "Scheduled maintenance window starting in 2 hours", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 16 * 60 * 60 * 1000), severity: "WARNING", type: "VIBRATION", entityType: "machine", entityId: "M-007", message: "Vibration trending upward (3.2 mm/s) on Blow Molder D", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "vib-M-007" },
+      { ts: new Date(now.getTime() - 18 * 60 * 60 * 1000), severity: "INFO", type: "SCHEDULE", entityType: "schedule", entityId: "S-001", message: "New schedule generated with improved risk-aware optimization", acknowledgedBy: adminUser.id, acknowledgedAt: new Date(now.getTime() - 17 * 60 * 60 * 1000), dedupeKey: null },
+      { ts: new Date(now.getTime() - 20 * 60 * 60 * 1000), severity: "CRITICAL", type: "MACHINE_FAILURE", entityType: "machine", entityId: "M-003", message: "Motor current spike detected - immediate inspection required", acknowledgedBy: supervisorUser.id, acknowledgedAt: new Date(now.getTime() - 19 * 60 * 60 * 1000), dedupeKey: "motor-M-003" },
+      { ts: new Date(now.getTime() - 22 * 60 * 60 * 1000), severity: "WARNING", type: "QUALITY_DRIFT", entityType: "machine", entityId: "M-004", message: "Bottle weight variance increasing - SPC control limit warning", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "weight-M-004" },
+      { ts: new Date(now.getTime() - 24 * 60 * 60 * 1000), severity: "INFO", type: "APPROVAL", entityType: "approval", entityId: "AP-001", message: "New approval request pending: Reschedule for high-risk machine", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 26 * 60 * 60 * 1000), severity: "WARNING", type: "TEMPERATURE", entityType: "machine", entityId: "M-002", message: "Temperature fluctuation detected - possible heating element issue", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "temp-M-002" },
+      { ts: new Date(now.getTime() - 28 * 60 * 60 * 1000), severity: "INFO", type: "SCHEDULE", entityType: "job", entityId: "J-042", message: "Job completed ahead of schedule - capacity available", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 30 * 60 * 60 * 1000), severity: "WARNING", type: "VIBRATION", entityType: "machine", entityId: "M-001", message: "Vibration level above normal baseline (2.8 mm/s)", acknowledgedBy: operatorUser.id, acknowledgedAt: new Date(now.getTime() - 29 * 60 * 60 * 1000), dedupeKey: "vib-M-001" },
+      { ts: new Date(now.getTime() - 32 * 60 * 60 * 1000), severity: "CRITICAL", type: "SCHEDULE", entityType: "job", entityId: "J-055", message: "Urgent job J-055 at risk - requires immediate machine assignment", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 34 * 60 * 60 * 1000), severity: "INFO", type: "QUALITY", entityType: "machine", entityId: "M-006", message: "Quality metrics within optimal range - all measurements in spec", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 36 * 60 * 60 * 1000), severity: "WARNING", type: "MAINTENANCE", entityType: "machine", entityId: "M-008", message: "Maintenance due in 48 hours - schedule maintenance window", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 38 * 60 * 60 * 1000), severity: "INFO", type: "SCHEDULE", entityType: "schedule", entityId: "S-002", message: "Schedule optimization completed - 12% improvement in makespan", acknowledgedBy: adminUser.id, acknowledgedAt: new Date(now.getTime() - 37 * 60 * 60 * 1000), dedupeKey: null },
+      { ts: new Date(now.getTime() - 40 * 60 * 60 * 1000), severity: "WARNING", type: "QUALITY_DRIFT", entityType: "machine", entityId: "M-010", message: "Neck diameter variance detected - monitor closely", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "neck-M-010" },
+      { ts: new Date(now.getTime() - 42 * 60 * 60 * 1000), severity: "CRITICAL", type: "MACHINE_FAILURE", entityType: "machine", entityId: "M-003", message: "Air pressure drop detected - potential leak in system", acknowledgedBy: supervisorUser.id, acknowledgedAt: new Date(now.getTime() - 41 * 60 * 60 * 1000), dedupeKey: "pressure-M-003" },
+      { ts: new Date(now.getTime() - 44 * 60 * 60 * 1000), severity: "INFO", type: "APPROVAL", entityType: "approval", entityId: "AP-003", message: "Approval request approved: Maintenance override granted", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 46 * 60 * 60 * 1000), severity: "WARNING", type: "TEMPERATURE", entityType: "machine", entityId: "M-007", message: "Temperature sensor reading inconsistent - verify calibration", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "temp-M-007" },
+      { ts: new Date(now.getTime() - 48 * 60 * 60 * 1000), severity: "INFO", type: "SCHEDULE", entityType: "job", entityId: "J-018", message: "Job rescheduled due to machine availability optimization", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: null },
+      { ts: new Date(now.getTime() - 50 * 60 * 60 * 1000), severity: "WARNING", type: "VIBRATION", entityType: "machine", entityId: "M-004", message: "Vibration pattern indicates potential imbalance - schedule inspection", acknowledgedBy: null, acknowledgedAt: null, dedupeKey: "vib-M-004" },
+    ];
+
+    alertData.forEach((a) => {
+      const id = `A-${String(this.alerts.size + 1).padStart(3, '0')}`;
       this.alerts.set(id, { ...a, id });
     });
 
+    // Create comprehensive approval data (15 approvals)
     const approvalData: Omit<Approval, "id">[] = [
-      { ts: new Date(), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-015", requestedBy: "orchestrator", status: "pending", approvedBy: null, approvedAt: null, reasonCode: null, notes: "High risk detected on M-003", source: "in_app" },
-      { ts: new Date(), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-002", requestedBy: "operator2", status: "pending", approvedBy: null, approvedAt: null, reasonCode: null, notes: "Requesting early maintenance window", source: "in_app" },
+      { ts: new Date(now.getTime() - 2 * 60 * 60 * 1000), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-015", requestedBy: "orchestrator", status: "pending", approvedBy: null, approvedAt: null, reasonCode: "HIGH_RISK", notes: "High failure risk detected on M-003 (0.65) - recommend rescheduling jobs to lower-risk machine", source: "in_app" },
+      { ts: new Date(now.getTime() - 4 * 60 * 60 * 1000), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-002", requestedBy: operatorUser.id, status: "pending", approvedBy: null, approvedAt: null, reasonCode: "PREVENTIVE", notes: "Requesting early maintenance window to address temperature fluctuations", source: "in_app" },
+      { ts: new Date(now.getTime() - 6 * 60 * 60 * 1000), actionType: "PRIORITY_OVERRIDE", entityType: "job", entityId: "J-028", requestedBy: supervisorUser.id, status: "approved", approvedBy: adminUser.id, approvedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000), reasonCode: "CUSTOMER_URGENT", notes: "Customer requested expedited delivery", source: "in_app" },
+      { ts: new Date(now.getTime() - 8 * 60 * 60 * 1000), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-012", requestedBy: "orchestrator", status: "approved", approvedBy: adminUser.id, approvedAt: new Date(now.getTime() - 7 * 60 * 60 * 1000), reasonCode: "OPTIMIZATION", notes: "Schedule optimization improves makespan by 8%", source: "in_app" },
+      { ts: new Date(now.getTime() - 10 * 60 * 60 * 1000), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-009", requestedBy: operatorUser.id, status: "denied", approvedBy: supervisorUser.id, approvedAt: new Date(now.getTime() - 9 * 60 * 60 * 1000), reasonCode: "SCHEDULE_CONFLICT", notes: "Maintenance window conflicts with high-priority job", source: "in_app" },
+      { ts: new Date(now.getTime() - 12 * 60 * 60 * 1000), actionType: "QUALITY_HOLD", entityType: "job", entityId: "J-035", requestedBy: "quality_system", status: "pending", approvedBy: null, approvedAt: null, reasonCode: "DEFECT_RATE", notes: "Defect rate exceeds threshold - hold production pending review", source: "automated" },
+      { ts: new Date(now.getTime() - 14 * 60 * 60 * 1000), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-018", requestedBy: "orchestrator", status: "pending", approvedBy: null, approvedAt: null, reasonCode: "MACHINE_DOWN", notes: "M-005 maintenance extended - reschedule affected jobs", source: "in_app" },
+      { ts: new Date(now.getTime() - 16 * 60 * 60 * 1000), actionType: "PRIORITY_OVERRIDE", entityType: "job", entityId: "J-052", requestedBy: supervisorUser.id, status: "approved", approvedBy: adminUser.id, approvedAt: new Date(now.getTime() - 15 * 60 * 60 * 1000), reasonCode: "RUSH_ORDER", notes: "Rush order from key customer", source: "in_app" },
+      { ts: new Date(now.getTime() - 18 * 60 * 60 * 1000), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-001", requestedBy: operatorUser.id, status: "approved", approvedBy: supervisorUser.id, approvedAt: new Date(now.getTime() - 17 * 60 * 60 * 1000), reasonCode: "PREVENTIVE", notes: "Early maintenance to prevent quality issues", source: "in_app" },
+      { ts: new Date(now.getTime() - 20 * 60 * 60 * 1000), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-020", requestedBy: "orchestrator", status: "denied", approvedBy: adminUser.id, approvedAt: new Date(now.getTime() - 19 * 60 * 60 * 1000), reasonCode: "NO_IMPROVEMENT", notes: "Proposed schedule does not improve metrics", source: "in_app" },
+      { ts: new Date(now.getTime() - 22 * 60 * 60 * 1000), actionType: "QUALITY_HOLD", entityType: "job", entityId: "J-041", requestedBy: "quality_system", status: "approved", approvedBy: supervisorUser.id, approvedAt: new Date(now.getTime() - 21 * 60 * 60 * 1000), reasonCode: "DEFECT_RATE", notes: "Quality review completed - proceed with adjusted parameters", source: "automated" },
+      { ts: new Date(now.getTime() - 24 * 60 * 60 * 1000), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-007", requestedBy: operatorUser.id, status: "pending", approvedBy: null, approvedAt: null, reasonCode: "VIBRATION_ISSUE", notes: "Addressing vibration trend before it becomes critical", source: "in_app" },
+      { ts: new Date(now.getTime() - 26 * 60 * 60 * 1000), actionType: "PRIORITY_OVERRIDE", entityType: "job", entityId: "J-048", requestedBy: supervisorUser.id, status: "pending", approvedBy: null, approvedAt: null, reasonCode: "CUSTOMER_URGENT", notes: "Customer delivery deadline moved up", source: "in_app" },
+      { ts: new Date(now.getTime() - 28 * 60 * 60 * 1000), actionType: "RESCHEDULE", entityType: "schedule", entityId: "S-022", requestedBy: "orchestrator", status: "approved", approvedBy: adminUser.id, approvedAt: new Date(now.getTime() - 27 * 60 * 60 * 1000), reasonCode: "OPTIMIZATION", notes: "Risk-aware optimization reduces overall risk cost by 22%", source: "in_app" },
+      { ts: new Date(now.getTime() - 30 * 60 * 60 * 1000), actionType: "MAINTENANCE_OVERRIDE", entityType: "machine", entityId: "M-004", requestedBy: operatorUser.id, status: "approved", approvedBy: supervisorUser.id, approvedAt: new Date(now.getTime() - 29 * 60 * 60 * 1000), reasonCode: "PREVENTIVE", notes: "Preventive maintenance to address vibration pattern", source: "in_app" },
     ];
 
-    approvalData.forEach((a, i) => {
-      const id = `AP-00${i + 1}`;
+    approvalData.forEach((a) => {
+      const id = `AP-${String(this.approvals.size + 1).padStart(3, '0')}`;
       this.approvals.set(id, { ...a, id });
+    });
+
+    // Create comprehensive ticket data (12 tickets)
+    const ticketData: Omit<Ticket, "id">[] = [
+      { ts: new Date(now.getTime() - 3 * 60 * 60 * 1000), type: "QUALITY_ISSUE", status: "open", assignedTo: supervisorUser.id, dueBy: new Date(now.getTime() + 21 * 60 * 60 * 1000), entityType: "machine", entityId: "M-001", policyJson: { severity: "high", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 6 * 60 * 60 * 1000), type: "MACHINE_DOWNTIME", status: "in_progress", assignedTo: operatorUser.id, dueBy: new Date(now.getTime() + 18 * 60 * 60 * 1000), entityType: "machine", entityId: "M-005", policyJson: { severity: "critical", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 9 * 60 * 60 * 1000), type: "SCHEDULE_CONFLICT", status: "resolved", assignedTo: adminUser.id, dueBy: new Date(now.getTime() + 15 * 60 * 60 * 1000), entityType: "schedule", entityId: "S-015", policyJson: { severity: "medium", autoEscalate: false } },
+      { ts: new Date(now.getTime() - 12 * 60 * 60 * 1000), type: "QUALITY_ISSUE", status: "open", assignedTo: supervisorUser.id, dueBy: new Date(now.getTime() + 12 * 60 * 60 * 1000), entityType: "machine", entityId: "M-002", policyJson: { severity: "high", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 15 * 60 * 60 * 1000), type: "MAINTENANCE_REQUEST", status: "in_progress", assignedTo: operatorUser.id, dueBy: new Date(now.getTime() + 9 * 60 * 60 * 1000), entityType: "machine", entityId: "M-009", policyJson: { severity: "medium", autoEscalate: false } },
+      { ts: new Date(now.getTime() - 18 * 60 * 60 * 1000), type: "SCHEDULE_CONFLICT", status: "resolved", assignedTo: adminUser.id, dueBy: new Date(now.getTime() + 6 * 60 * 60 * 1000), entityType: "schedule", entityId: "S-012", policyJson: { severity: "low", autoEscalate: false } },
+      { ts: new Date(now.getTime() - 21 * 60 * 60 * 1000), type: "QUALITY_ISSUE", status: "open", assignedTo: supervisorUser.id, dueBy: new Date(now.getTime() + 3 * 60 * 60 * 1000), entityType: "machine", entityId: "M-010", policyJson: { severity: "high", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 24 * 60 * 60 * 1000), type: "MACHINE_DOWNTIME", status: "resolved", assignedTo: operatorUser.id, dueBy: new Date(now.getTime()), entityType: "machine", entityId: "M-003", policyJson: { severity: "critical", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 27 * 60 * 60 * 1000), type: "MAINTENANCE_REQUEST", status: "open", assignedTo: operatorUser.id, dueBy: new Date(now.getTime() - 3 * 60 * 60 * 1000), entityType: "machine", entityId: "M-007", policyJson: { severity: "medium", autoEscalate: false } },
+      { ts: new Date(now.getTime() - 30 * 60 * 60 * 1000), type: "SCHEDULE_CONFLICT", status: "resolved", assignedTo: adminUser.id, dueBy: new Date(now.getTime() - 6 * 60 * 60 * 1000), entityType: "schedule", entityId: "S-018", policyJson: { severity: "low", autoEscalate: false } },
+      { ts: new Date(now.getTime() - 33 * 60 * 60 * 1000), type: "QUALITY_ISSUE", status: "in_progress", assignedTo: supervisorUser.id, dueBy: new Date(now.getTime() - 9 * 60 * 60 * 1000), entityType: "machine", entityId: "M-004", policyJson: { severity: "high", autoEscalate: true } },
+      { ts: new Date(now.getTime() - 36 * 60 * 60 * 1000), type: "MACHINE_DOWNTIME", status: "resolved", assignedTo: operatorUser.id, dueBy: new Date(now.getTime() - 12 * 60 * 60 * 1000), entityType: "machine", entityId: "M-008", policyJson: { severity: "critical", autoEscalate: true } },
+    ];
+
+    ticketData.forEach((t) => {
+      const id = `T-${String(this.tickets.size + 1).padStart(3, '0')}`;
+      this.tickets.set(id, { ...t, id });
     });
   }
 
@@ -248,6 +470,101 @@ export class MemStorage implements IStorage {
     const newLog: AuditLog = { ...log, id, ts: new Date() };
     this.auditLogs.set(id, newLog);
     return newLog;
+  }
+
+  // Dataset methods
+  async getDatasets(): Promise<Dataset[]> {
+    return Array.from(this.datasets.values()).sort((a, b) => {
+      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
+
+  async getDataset(id: string): Promise<Dataset | undefined> {
+    return this.datasets.get(id);
+  }
+
+  async createDataset(dataset: InsertDataset): Promise<Dataset> {
+    const id = randomUUID();
+    const newDataset: Dataset = { ...dataset, id, uploadedAt: new Date() };
+    this.datasets.set(id, newDataset);
+    return newDataset;
+  }
+
+  async deleteDataset(id: string): Promise<boolean> {
+    return this.datasets.delete(id);
+  }
+
+  // ML Model methods
+  async getMLModels(): Promise<MLModel[]> {
+    return Array.from(this.mlModels.values()).sort((a, b) => {
+      const dateA = a.trainedAt ? new Date(a.trainedAt).getTime() : 0;
+      const dateB = b.trainedAt ? new Date(b.trainedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
+
+  async getMLModel(id: string): Promise<MLModel | undefined> {
+    return this.mlModels.get(id);
+  }
+
+  async createMLModel(model: InsertMLModel): Promise<MLModel> {
+    const id = randomUUID();
+    const newModel: MLModel = { ...model, id, trainedAt: model.trainedAt || null };
+    this.mlModels.set(id, newModel);
+    return newModel;
+  }
+
+  async updateMLModel(id: string, updates: Partial<MLModel>): Promise<MLModel | undefined> {
+    const model = this.mlModels.get(id);
+    if (model) {
+      const updated = { ...model, ...updates };
+      this.mlModels.set(id, updated);
+      return updated;
+    }
+    return undefined;
+  }
+
+  // Recommendation methods
+  async getRecommendations(): Promise<Recommendation[]> {
+    return Array.from(this.recommendations.values()).sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }
+
+  async getRecommendation(id: string): Promise<Recommendation | undefined> {
+    return this.recommendations.get(id);
+  }
+
+  async createRecommendation(rec: InsertRecommendation): Promise<Recommendation> {
+    const id = randomUUID();
+    const newRec: Recommendation = { ...rec, id, createdAt: new Date() };
+    this.recommendations.set(id, newRec);
+    return newRec;
+  }
+
+  async updateRecommendationStatus(
+    id: string,
+    status: string,
+    userId?: string,
+    overrideReason?: string
+  ): Promise<Recommendation | undefined> {
+    const rec = this.recommendations.get(id);
+    if (rec) {
+      const updated: Recommendation = {
+        ...rec,
+        status: status as any,
+        acceptedBy: status === 'accepted' ? userId || null : rec.acceptedBy,
+        acceptedAt: status === 'accepted' ? new Date() : rec.acceptedAt,
+        overrideReason: overrideReason || rec.overrideReason,
+      };
+      this.recommendations.set(id, updated);
+      return updated;
+    }
+    return undefined;
   }
 }
 

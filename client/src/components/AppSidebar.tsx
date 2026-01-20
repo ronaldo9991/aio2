@@ -14,7 +14,11 @@ import {
   Settings, 
   MessageSquare,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  Bot,
+  FileText,
+  Zap
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '@/lib/authStore';
@@ -35,17 +39,21 @@ import {
 const mainNavItems = [
   { title: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard' },
   { title: 'Schedule', icon: Calendar, href: '/app/schedule' },
+  { title: 'Machines', icon: Wrench, href: '/app/machines' },
+  { title: 'Robotics', icon: Bot, href: '/app/robotics' },
   { title: 'Machine Health', icon: Wrench, href: '/app/machine-health' },
+  { title: 'Machines vs Robotics', icon: BarChart3, href: '/app/machines-vs-robotics' },
   { title: 'Quality Control', icon: TestTube2, href: '/app/quality-control' },
+  { title: 'Energy', icon: Zap, href: '/app/energy' },
   { title: 'Alerts', icon: AlertTriangle, href: '/app/alerts' },
   { title: 'Tickets', icon: Ticket, href: '/app/tickets' },
   { title: 'Approvals', icon: CheckSquare, href: '/app/approvals' },
   { title: 'Upload Center', icon: Upload, href: '/app/upload-center' },
 ];
 
-const analyticsItems = [
-  { title: 'Fairness', icon: Scale, href: '/app/fairness' },
-  { title: 'Evaluation', icon: BarChart3, href: '/app/evaluation' },
+const aiItems = [
+  { title: 'AI Recommendations', icon: Sparkles, href: '/app/ai-recommendations' },
+  { title: 'AI Report', icon: FileText, href: '/app/ai-report' },
 ];
 
 const adminItems = [
@@ -103,18 +111,18 @@ export function AppSidebar() {
 
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Analytics
+            AI
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {analyticsItems.map((item) => (
+              {aiItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton 
                     asChild 
                     isActive={location === item.href}
                     className="gap-3"
                   >
-                    <Link href={item.href} data-testid={`nav-${item.title.toLowerCase()}`}>
+                    <Link href={item.href} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}>
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </Link>

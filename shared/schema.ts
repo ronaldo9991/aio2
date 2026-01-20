@@ -173,6 +173,53 @@ export const whatsappConfig = pgTable("whatsapp_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const datasets = pgTable("datasets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  filename: text("filename").notNull(),
+  rowCount: integer("row_count"),
+  columnMappingJson: jsonb("column_mapping_json"),
+  sampleDataJson: jsonb("sample_data_json"),
+  status: text("status").notNull().default("active"),
+  uploadedBy: varchar("uploaded_by"),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  description: text("description"),
+  tags: jsonb("tags"),
+});
+
+export const mlModels = pgTable("ml_models", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'forecast', 'classification', 'anomaly'
+  version: integer("version").notNull().default(1),
+  status: text("status").notNull().default("draft"), // 'draft', 'training', 'active', 'archived'
+  datasetId: varchar("dataset_id"),
+  metricsJson: jsonb("metrics_json"),
+  featureImportanceJson: jsonb("feature_importance_json"),
+  trainedAt: timestamp("trained_at"),
+  trainedBy: varchar("trained_by"),
+  configJson: jsonb("config_json"),
+});
+
+export const recommendations = pgTable("recommendations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // 'maintenance', 'schedule', 'quality', 'energy'
+  entityType: text("entity_type"), // 'machine', 'job', 'schedule'
+  entityId: varchar("entity_id"),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  confidence: real("confidence").notNull(),
+  impactEstimate: text("impact_estimate"),
+  status: text("status").notNull().default("pending"), // 'pending', 'accepted', 'overridden'
+  acceptedBy: varchar("accepted_by"),
+  acceptedAt: timestamp("accepted_at"),
+  overrideReason: text("override_reason"),
+  modelId: varchar("model_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertMachineSchema = createInsertSchema(machines).omit({ id: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
@@ -186,6 +233,9 @@ export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, t
 export const insertApprovalSchema = createInsertSchema(approvals).omit({ id: true, ts: true });
 export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, ts: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, ts: true });
+export const insertDatasetSchema = createInsertSchema(datasets).omit({ id: true, uploadedAt: true });
+export const insertMLModelSchema = createInsertSchema(mlModels).omit({ id: true, trainedAt: true });
+export const insertRecommendationSchema = createInsertSchema(recommendations).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -213,6 +263,12 @@ export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Upload = typeof uploads.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertDataset = z.infer<typeof insertDatasetSchema>;
+export type Dataset = typeof datasets.$inferSelect;
+export type InsertMLModel = z.infer<typeof insertMLModelSchema>;
+export type MLModel = typeof mlModels.$inferSelect;
+export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+export type Recommendation = typeof recommendations.$inferSelect;
 
 export const loginSchema = z.object({
   email: z.string().email(),
