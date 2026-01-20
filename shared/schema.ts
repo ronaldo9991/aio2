@@ -116,6 +116,26 @@ export const tickets = pgTable("tickets", {
   entityType: text("entity_type"),
   entityId: varchar("entity_id"),
   policyJson: jsonb("policy_json"),
+  // Customer support ticket fields
+  ticketRef: varchar("ticket_ref").unique(), // Human-readable reference (e.g., T-20250115-1234)
+  customerName: text("customer_name"),
+  customerPhone: text("customer_phone"),
+  customerEmail: text("customer_email"),
+  subject: text("subject"),
+  priority: text("priority").default("medium"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const ticketMessages = pgTable("ticket_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull(), // FK to tickets.id
+  ticketRef: varchar("ticket_ref").notNull(), // Also store ref for quick lookup
+  sender: text("sender").notNull(), // "customer" | "manager" | "agent"
+  channel: text("channel").notNull(), // "web" | "whatsapp"
+  body: text("body").notNull(),
+  externalId: varchar("external_id").unique(), // Twilio MessageSid for idempotency
+  mediaUrl: text("media_url"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const approvals = pgTable("approvals", {
@@ -229,7 +249,8 @@ export const insertSensorReadingSchema = createInsertSchema(sensorReadings).omit
 export const insertQualityMeasurementSchema = createInsertSchema(qualityMeasurements).omit({ id: true });
 export const insertRiskScoreSchema = createInsertSchema(riskScores).omit({ id: true });
 export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, ts: true });
-export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, ts: true });
+export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, ts: true, updatedAt: true });
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit({ id: true, createdAt: true });
 export const insertApprovalSchema = createInsertSchema(approvals).omit({ id: true, ts: true });
 export const insertUploadSchema = createInsertSchema(uploads).omit({ id: true, ts: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, ts: true });
@@ -257,6 +278,8 @@ export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
+export type TicketMessage = typeof ticketMessages.$inferSelect;
 export type InsertApproval = z.infer<typeof insertApprovalSchema>;
 export type Approval = typeof approvals.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;

@@ -269,6 +269,231 @@ export async function registerRoutes(
     res.status(201).json(ticket);
   });
 
+  // ============================================
+  // CUSTOMER SUPPORT TICKET ENDPOINTS
+  // ============================================
+
+  /**
+   * POST /api/ticket
+   * Create a customer support ticket
+   * Public endpoint (no auth required for customers)
+   */
+  app.post("/api/ticket", async (req: Request, res: Response) => {
+    try {
+      const { validateCreateTicketInput, generateTicketRef } = await import("./services/ticketService");
+      
+      // Validate input
+      const validation = validateCreateTicketInput(req.body);
+      if (!validation.valid) {
+        return res.status(400).json({
+          ok: false,
+          errors: validation.errors,
+        });
+      }
+
+      const input = validation.input!;
+      const ticketRef = generateTicketRef();
+      const now = new Date();
+      const BASE_URL = process.env.BASE_URL || "https://aio2-production.up.railway.app";
+
+      // Create ticket
+      const { ticket, message } = await storage.createCustomerTicket(
+        {
+          ts: now,
+          type: "customer_support",
+          status: "open",
+          assignedTo: null,
+          dueBy: null,
+          entityType: "customer",
+          entityId: null,
+          policyJson: { priority: input.priority },
+          ticketRef,
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          customerEmail: input.customerEmail,
+          subject: input.subject,
+          priority: input.priority,
+          updatedAt: now,
+        },
+        {
+          ticketId: "", // Will be set by createCustomerTicket
+          ticketRef,
+          sender: "customer",
+          channel: "web",
+          body: input.message,
+          externalId: null,
+          mediaUrl: null,
+        }
+      );
+
+      // Notify n8n asynchronously (non-blocking)
+      const { notifyN8nTicketCreated } = await import("./services/n8nWebhook");
+      notifyN8nTicketCreated({
+        ticketRef,
+        ticketId: ticket.id,
+        ticketUrl: `${BASE_URL}/api/ticket/${ticketRef}`,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        customerEmail: input.customerEmail,
+        subject: input.subject,
+        message: input.message,
+        priority: input.priority,
+        createdAt: now.toISOString(),
+      }).catch((err) => {
+        console.error("[API] Failed to notify n8n (non-blocking):", err);
+      });
+
+      res.status(201).json({
+        ok: true,
+        ticketRef,
+        ticketId: ticket.id,
+      });
+    } catch (error: any) {
+      console.error("[API] Error creating ticket:", error);
+      res.status(500).json({
+        ok: false,
+        message: "Failed to create ticket",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  });
+
+  /**
+   * POST /api/ticket/inbound
+   * Receive WhatsApp reply from n8n
+   * Protected by x-api-key header
+   */
+  app.post("/api/ticket/inbound", async (req: Request, res: Response) => {
+    try {
+      // Validate API key
+      const apiKey = req.headers["x-api-key"];
+      const requiredKey = process.env.RAILWAY_INBOUND_SECRET;
+
+      if (!requiredKey) {
+        console.error("[API] RAILWAY_INBOUND_SECRET not configured");
+        return res.status(500).json({ ok: false, message: "Server configuration error" });
+      }
+
+      if (apiKey !== requiredKey) {
+        console.warn("[API] Invalid API key for inbound message");
+        return res.status(401).json({ ok: false, message: "Unauthorized" });
+      }
+
+      const { validateInboundMessageInput } = await import("./services/ticketService");
+      
+      // Validate input
+      const validation = validateInboundMessageInput(req.body);
+      if (!validation.valid) {
+        return res.status(400).json({
+          ok: false,
+          errors: validation.errors,
+        });
+      }
+
+      const input = validation.input!;
+
+      // Check if ticket exists
+      const ticket = await storage.getTicketByRef(input.ticketRef);
+      if (!ticket) {
+        return res.status(404).json({
+          ok: false,
+          message: `Ticket not found: ${input.ticketRef}`,
+        });
+      }
+
+      // Check idempotency (if externalId provided)
+      if (input.externalId) {
+        const existingMessage = await storage.getMessageByExternalId(input.externalId);
+        if (existingMessage) {
+          console.log(`[API] Duplicate message detected (idempotent): ${input.externalId}`);
+          return res.json({ ok: true, message: "Message already processed" });
+        }
+      }
+
+      // Add message to ticket
+      await storage.addTicketMessage({
+        ticketId: ticket.id,
+        ticketRef: input.ticketRef,
+        sender: "manager",
+        channel: input.channel || "whatsapp",
+        body: input.message,
+        externalId: input.externalId || null,
+        mediaUrl: input.mediaUrl || null,
+      });
+
+      // Update ticket status if needed (e.g., if it was closed, reopen it)
+      if (ticket.status === "closed" || ticket.status === "resolved") {
+        await storage.updateTicketStatus(ticket.id, "open");
+      }
+
+      console.log(`[API] Inbound message added to ticket: ${input.ticketRef}`);
+
+      res.json({ ok: true });
+    } catch (error: any) {
+      console.error("[API] Error processing inbound message:", error);
+      res.status(500).json({
+        ok: false,
+        message: "Failed to process inbound message",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  });
+
+  /**
+   * GET /api/ticket/:ticketRef
+   * Get ticket with full conversation thread
+   * Public endpoint (customers can view their tickets)
+   */
+  app.get("/api/ticket/:ticketRef", async (req: Request, res: Response) => {
+    try {
+      const { ticketRef } = req.params;
+
+      if (!ticketRef) {
+        return res.status(400).json({ ok: false, message: "ticketRef is required" });
+      }
+
+      const result = await storage.getTicketWithMessages(ticketRef);
+
+      if (!result) {
+        return res.status(404).json({
+          ok: false,
+          message: `Ticket not found: ${ticketRef}`,
+        });
+      }
+
+      res.json({
+        ok: true,
+        ticket: {
+          id: result.ticket.id,
+          ticketRef: result.ticket.ticketRef,
+          subject: result.ticket.subject,
+          status: result.ticket.status,
+          customerName: result.ticket.customerName,
+          customerPhone: result.ticket.customerPhone,
+          customerEmail: result.ticket.customerEmail,
+          priority: result.ticket.priority,
+          createdAt: result.ticket.ts,
+          updatedAt: result.ticket.updatedAt,
+        },
+        messages: result.messages.map((msg) => ({
+          id: msg.id,
+          sender: msg.sender,
+          channel: msg.channel,
+          body: msg.body,
+          mediaUrl: msg.mediaUrl,
+          createdAt: msg.createdAt,
+        })),
+      });
+    } catch (error: any) {
+      console.error("[API] Error fetching ticket:", error);
+      res.status(500).json({
+        ok: false,
+        message: "Failed to fetch ticket",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  });
+
   // Webhook endpoints for n8n integration (no auth required for webhooks)
   app.post("/api/webhooks/whatsapp/alert", async (req: Request, res: Response) => {
     // This endpoint can be called by n8n when an alert is created

@@ -6,8 +6,20 @@ This application supports WhatsApp notifications via Twilio and n8n integration 
 
 - **Automatic WhatsApp notifications** when alerts are created
 - **Automatic WhatsApp notifications** when support tickets are created
+- **Customer support ticket system** with bidirectional WhatsApp communication
 - **Dual integration support**: Direct Twilio or n8n webhook
 - **Operation Manager notifications**: All alerts and tickets sent to +919655716000
+
+## Customer Support Tickets
+
+For detailed documentation on the customer support ticket system with WhatsApp integration, see [TICKET_SYSTEM.md](./TICKET_SYSTEM.md).
+
+**Quick Start:**
+1. Create a ticket: `POST /api/ticket`
+2. n8n sends WhatsApp notification to manager
+3. Manager replies via WhatsApp
+4. n8n calls `POST /api/ticket/inbound` to attach reply
+5. View full conversation: `GET /api/ticket/:ticketRef`
 
 ## Setup Options
 

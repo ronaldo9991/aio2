@@ -4,6 +4,7 @@ import {
   type Job, type InsertJob,
   type Alert, type InsertAlert,
   type Ticket, type InsertTicket,
+  type TicketMessage, type InsertTicketMessage,
   type Approval, type InsertApproval,
   type AuditLog, type InsertAuditLog,
   type Dataset, type InsertDataset,
@@ -33,8 +34,14 @@ export interface IStorage {
   
   getTickets(): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
+  getTicketByRef(ticketRef: string): Promise<Ticket | undefined>;
   createTicket(ticket: InsertTicket): Promise<Ticket>;
   updateTicketStatus(id: string, status: string): Promise<Ticket | undefined>;
+  // Customer ticket methods
+  createCustomerTicket(ticket: InsertTicket, initialMessage: InsertTicketMessage): Promise<{ ticket: Ticket; message: TicketMessage }>;
+  getTicketWithMessages(ticketRef: string): Promise<{ ticket: Ticket; messages: TicketMessage[] } | undefined>;
+  addTicketMessage(message: InsertTicketMessage): Promise<TicketMessage>;
+  getMessageByExternalId(externalId: string): Promise<TicketMessage | undefined>;
   
   getApprovals(): Promise<Approval[]>;
   getApproval(id: string): Promise<Approval | undefined>;
@@ -66,6 +73,9 @@ export class MemStorage implements IStorage {
   private jobs: Map<string, Job>;
   private alerts: Map<string, Alert>;
   private tickets: Map<string, Ticket>;
+  private ticketMessages: Map<string, TicketMessage>;
+  private ticketRefIndex: Map<string, string>; // ticketRef -> ticketId mapping
+  private externalIdIndex: Map<string, string>; // externalId -> messageId mapping
   private approvals: Map<string, Approval>;
   private auditLogs: Map<string, AuditLog>;
   private datasets: Map<string, Dataset>;
@@ -78,6 +88,9 @@ export class MemStorage implements IStorage {
     this.jobs = new Map();
     this.alerts = new Map();
     this.tickets = new Map();
+    this.ticketMessages = new Map();
+    this.ticketRefIndex = new Map();
+    this.externalIdIndex = new Map();
     this.approvals = new Map();
     this.auditLogs = new Map();
     this.datasets = new Map();
@@ -476,9 +489,117 @@ export class MemStorage implements IStorage {
     const ticket = this.tickets.get(id);
     if (ticket) {
       ticket.status = status;
+      if (ticket.updatedAt !== undefined) {
+        ticket.updatedAt = new Date();
+      }
       this.tickets.set(id, ticket);
     }
     return ticket;
+  }
+
+  // Customer ticket methods
+  async getTicketByRef(ticketRef: string): Promise<Ticket | undefined> {
+    const ticketId = this.ticketRefIndex.get(ticketRef);
+    if (!ticketId) return undefined;
+    return this.tickets.get(ticketId);
+  }
+
+  async createCustomerTicket(
+    ticket: InsertTicket,
+    initialMessage: InsertTicketMessage
+  ): Promise<{ ticket: Ticket; message: TicketMessage }> {
+    const ticketId = randomUUID();
+    const messageId = randomUUID();
+    const now = new Date();
+
+    const newTicket: Ticket = {
+      ...ticket,
+      id: ticketId,
+      ts: now,
+      updatedAt: now,
+    } as Ticket;
+
+    const newMessage: TicketMessage = {
+      ...initialMessage,
+      id: messageId,
+      ticketId,
+      createdAt: now,
+    } as TicketMessage;
+
+    // Store ticket and message
+    this.tickets.set(ticketId, newTicket);
+    this.ticketMessages.set(messageId, newMessage);
+
+    // Index by ticketRef for quick lookup
+    if (ticket.ticketRef) {
+      this.ticketRefIndex.set(ticket.ticketRef, ticketId);
+    }
+
+    // Index by externalId if provided (for idempotency)
+    if (initialMessage.externalId) {
+      this.externalIdIndex.set(initialMessage.externalId, messageId);
+    }
+
+    return { ticket: newTicket, message: newMessage };
+  }
+
+  async getTicketWithMessages(ticketRef: string): Promise<{ ticket: Ticket; messages: TicketMessage[] } | undefined> {
+    const ticket = await this.getTicketByRef(ticketRef);
+    if (!ticket) return undefined;
+
+    // Get all messages for this ticket, ordered by createdAt
+    const messages = Array.from(this.ticketMessages.values())
+      .filter((msg) => msg.ticketRef === ticketRef || msg.ticketId === ticket.id)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
+    return { ticket, messages };
+  }
+
+  async addTicketMessage(message: InsertTicketMessage): Promise<TicketMessage> {
+    const messageId = randomUUID();
+    const now = new Date();
+
+    // Find ticket by ref
+    const ticket = await this.getTicketByRef(message.ticketRef);
+    if (!ticket) {
+      throw new Error(`Ticket not found: ${message.ticketRef}`);
+    }
+
+    const newMessage: TicketMessage = {
+      ...message,
+      id: messageId,
+      ticketId: ticket.id,
+      createdAt: now,
+    } as TicketMessage;
+
+    // Check idempotency by externalId
+    if (message.externalId) {
+      const existingMessageId = this.externalIdIndex.get(message.externalId);
+      if (existingMessageId) {
+        const existing = this.ticketMessages.get(existingMessageId);
+        if (existing) {
+          return existing; // Return existing message (idempotent)
+        }
+      }
+      this.externalIdIndex.set(message.externalId, messageId);
+    }
+
+    // Store message
+    this.ticketMessages.set(messageId, newMessage);
+
+    // Update ticket updatedAt
+    if (ticket.updatedAt !== undefined) {
+      ticket.updatedAt = now;
+      this.tickets.set(ticket.id, ticket);
+    }
+
+    return newMessage;
+  }
+
+  async getMessageByExternalId(externalId: string): Promise<TicketMessage | undefined> {
+    const messageId = this.externalIdIndex.get(externalId);
+    if (!messageId) return undefined;
+    return this.ticketMessages.get(messageId);
   }
 
   async getApprovals(): Promise<Approval[]> {
