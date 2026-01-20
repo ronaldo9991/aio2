@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ticket, Clock, User, CheckCircle2, Plus } from 'lucide-react';
+import { Ticket, Clock, User, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPIChip, KPIGrid } from '@/components/KPIChip';
@@ -27,6 +27,16 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TicketItem {
   id: string;
@@ -224,11 +234,21 @@ export function Tickets() {
       key: 'actions',
       header: '',
       render: (t: TicketItem) => (
-        t.status === 'open' && (
-          <Button size="sm" variant="outline" data-testid={`button-view-${t.id}`}>
-            View
+        <div className="flex gap-2">
+          {t.status === 'open' && (
+            <Button size="sm" variant="outline" data-testid={`button-view-${t.id}`}>
+              View
+            </Button>
+          )}
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={() => setDeleteTicketId(t.id)}
+            className="text-red-400 hover:text-red-300"
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
-        )
+        </div>
       ),
     },
   ];
@@ -394,6 +414,50 @@ export function Tickets() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Ticket Confirmation */}
+      <AlertDialog open={deleteTicketId !== null} onOpenChange={(open) => !open && setDeleteTicketId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete ticket {deleteTicketId}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTicketId && deleteTicketMutation.mutate(deleteTicketId)}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteTicketMutation.isPending}
+            >
+              {deleteTicketMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Tickets Confirmation */}
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Tickets</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {mockTickets.length} tickets? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteAllTicketsMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteAllTicketsMutation.isPending}
+            >
+              {deleteAllTicketsMutation.isPending ? 'Deleting...' : 'Delete All'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
