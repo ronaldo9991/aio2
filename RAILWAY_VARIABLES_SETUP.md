@@ -29,7 +29,7 @@ Click **"Add"**
 #### Variable 2: N8N_TICKET_CREATED_WEBHOOK
 ```
 Name:  N8N_TICKET_CREATED_WEBHOOK
-Value: https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
+Value: https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 ```
 Click **"Add"**
 
@@ -83,7 +83,7 @@ Copy these exact values:
 ```
 BASE_URL=https://aio2-production.up.railway.app
 
-N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
+N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 
 N8N_SHARED_SECRET=7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
 
