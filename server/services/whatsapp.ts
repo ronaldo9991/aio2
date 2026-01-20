@@ -27,7 +27,9 @@ const config: WhatsAppConfig = {
   enabled: process.env.WHATSAPP_ENABLED === "true" || !!process.env.TWILIO_ACCOUNT_SID || !!process.env.N8N_WEBHOOK_URL,
 };
 
-const TARGET_PHONE = "+91965571600"; // Default target phone number
+// Operation Manager WhatsApp number
+const OPERATION_MANAGER_PHONE = "+919655716000"; // Operation Manager phone number
+const TARGET_PHONE = OPERATION_MANAGER_PHONE; // Default target phone number
 
 /**
  * Send WhatsApp message via Twilio directly
@@ -105,8 +107,11 @@ export async function sendWhatsAppMessage(
     return false;
   }
 
+  // Always send to Operation Manager unless explicitly overridden
+  const targetPhone = options.to || OPERATION_MANAGER_PHONE;
+  
   const whatsappMessage: WhatsAppMessage = {
-    to: options.to || TARGET_PHONE,
+    to: targetPhone,
     message,
     alertId: options.alertId,
     ticketId: options.ticketId,
@@ -149,15 +154,18 @@ export function formatAlertMessage(alert: {
   const emoji = severityEmoji[alert.severity] || "📢";
   const timestamp = new Date(alert.ts).toLocaleString();
 
-  return `${emoji} *ALERT: ${alert.severity}*
+  return `${emoji} *🚨 ALERT NOTIFICATION 🚨*
 
+*Severity:* ${alert.severity}
 *Type:* ${alert.type}
 *Entity:* ${alert.entityType} ${alert.entityId}
 *Time:* ${timestamp}
 
 ${alert.message}
 
-_Alert ID: ${alert.id}_`;
+---
+_Alert ID: ${alert.id}_
+_To: Operation Manager_`;
 }
 
 /**
@@ -186,14 +194,16 @@ export function formatTicketMessage(ticket: {
     ? new Date(ticket.dueBy).toLocaleString()
     : "Not set";
 
-  return `${emoji} *SUPPORT TICKET: ${ticket.status.toUpperCase()}*
+  return `${emoji} *📋 SUPPORT TICKET - OPERATION MANAGER 📋*
 
 *Type:* ${ticket.type}
-*Status:* ${ticket.status}
+*Status:* ${ticket.status.toUpperCase()}
 *Entity:* ${ticket.entityType} ${ticket.entityId}
 *Created:* ${timestamp}
 *Due By:* ${dueDate}
-${ticket.assignedTo ? `*Assigned To:* ${ticket.assignedTo}` : ""}
+${ticket.assignedTo ? `*Assigned To:* ${ticket.assignedTo}` : "*Assigned To:* Operation Manager"}
 
-_Ticket ID: ${ticket.id}_`;
+---
+_Ticket ID: ${ticket.id}_
+_⚠️ Action Required - Please Review_`;
 }

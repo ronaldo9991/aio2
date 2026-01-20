@@ -411,7 +411,12 @@ export class MemStorage implements IStorage {
     try {
       const { sendWhatsAppMessage, formatAlertMessage } = await import("./services/whatsapp");
       const message = formatAlertMessage(alert);
-      await sendWhatsAppMessage(message, { alertId: alert.id });
+      // Send to Operation Manager at +919655716000
+      await sendWhatsAppMessage(message, { 
+        alertId: alert.id,
+        to: "+919655716000" // Operation Manager
+      });
+      console.log(`[Storage] Alert WhatsApp sent to Operation Manager: ${alert.id}`);
     } catch (error) {
       // Silently fail if WhatsApp service is not available
       console.error("[Storage] WhatsApp service error:", error);
@@ -455,7 +460,12 @@ export class MemStorage implements IStorage {
     try {
       const { sendWhatsAppMessage, formatTicketMessage } = await import("./services/whatsapp");
       const message = formatTicketMessage(ticket);
-      await sendWhatsAppMessage(message, { ticketId: ticket.id });
+      // Send directly to Operation Manager at +919655716000
+      await sendWhatsAppMessage(message, { 
+        ticketId: ticket.id,
+        to: "+919655716000" // Operation Manager
+      });
+      console.log(`[Storage] Ticket WhatsApp sent to Operation Manager: ${ticket.id}`);
     } catch (error) {
       // Silently fail if WhatsApp service is not available
       console.error("[Storage] WhatsApp service error:", error);

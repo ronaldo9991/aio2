@@ -284,7 +284,7 @@ export async function registerRoutes(
       const message = formatAlertMessage(alert);
       const success = await sendWhatsAppMessage(message, { 
         alertId: alert.id,
-        to: req.body.to || undefined,
+        to: req.body.to || "+919655716000", // Default to Operation Manager
       });
 
       res.json({ success, message: success ? "WhatsApp message sent" : "Failed to send WhatsApp message" });
@@ -307,7 +307,7 @@ export async function registerRoutes(
       const message = formatTicketMessage(ticket);
       const success = await sendWhatsAppMessage(message, { 
         ticketId: ticket.id,
-        to: req.body.to || undefined,
+        to: req.body.to || "+919655716000", // Default to Operation Manager
       });
 
       res.json({ success, message: success ? "WhatsApp message sent" : "Failed to send WhatsApp message" });

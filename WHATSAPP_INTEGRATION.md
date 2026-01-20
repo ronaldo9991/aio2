@@ -7,7 +7,7 @@ This application supports WhatsApp notifications via Twilio and n8n integration 
 - **Automatic WhatsApp notifications** when alerts are created
 - **Automatic WhatsApp notifications** when support tickets are created
 - **Dual integration support**: Direct Twilio or n8n webhook
-- **Configurable target phone number**: Defaults to +91965571600
+- **Operation Manager notifications**: All alerts and tickets sent to +919655716000
 
 ## Setup Options
 
@@ -59,11 +59,11 @@ This application supports WhatsApp notifications via Twilio and n8n integration 
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | Yes (for Twilio) | - |
 | `TWILIO_WHATSAPP_FROM` | Twilio WhatsApp number | Yes (for Twilio) | `whatsapp:+14155238886` |
 | `N8N_WEBHOOK_URL` | n8n webhook URL | Yes (for n8n) | - |
-| `WHATSAPP_TARGET_PHONE` | Target phone number | No | `+91965571600` |
+| `WHATSAPP_TARGET_PHONE` | Target phone number | No | `+919655716000` (Operation Manager) |
 
 ### Target Phone Number
 
-The default target phone number is `+91965571600`. You can override this by:
+The default target phone number is `+919655716000` (Operation Manager). All alerts and support tickets are automatically sent to this number. You can override this by:
 - Setting `WHATSAPP_TARGET_PHONE` environment variable
 - Passing `to` parameter in webhook calls
 
@@ -155,7 +155,7 @@ Content-Type: application/json
   "entityId": "M-003",
   "message": "High vibration detected",
   "ts": "2025-01-15T10:30:00Z",
-  "to": "+91965571600"  // Optional: override target
+  "to": "+919655716000"  // Optional: override target (defaults to Operation Manager)
 }
 ```
 
@@ -173,7 +173,7 @@ Content-Type: application/json
   "ts": "2025-01-15T08:00:00Z",
   "assignedTo": "operator1",
   "dueBy": "2025-01-16T12:00:00Z",
-  "to": "+91965571600"  // Optional: override target
+  "to": "+919655716000"  // Optional: override target (defaults to Operation Manager)
 }
 ```
 
