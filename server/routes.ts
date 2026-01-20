@@ -170,6 +170,28 @@ export async function registerRoutes(
     res.json(alerts.slice(0, 5));
   });
 
+  app.post("/api/alerts", authMiddleware, async (req: Request, res: Response) => {
+    const { severity, type, entityType, entityId, message, dedupeKey } = req.body;
+    
+    if (!severity || !type || !message) {
+      return res.status(400).json({ message: "severity, type, and message are required" });
+    }
+
+    const alert = await storage.createAlert({
+      ts: new Date(),
+      severity,
+      type,
+      entityType: entityType || "system",
+      entityId: entityId || "unknown",
+      message,
+      acknowledgedBy: null,
+      acknowledgedAt: null,
+      dedupeKey: dedupeKey || null,
+    });
+
+    res.status(201).json(alert);
+  });
+
   app.post("/api/alerts/:id/ack", authMiddleware, async (req: AuthRequest, res: Response) => {
     const alert = await storage.acknowledgeAlert(req.params.id, req.user?.id || "system");
     if (!alert) {
@@ -224,6 +246,74 @@ export async function registerRoutes(
   app.get("/api/tickets", authMiddleware, async (req: Request, res: Response) => {
     const tickets = await storage.getTickets();
     res.json(tickets);
+  });
+
+  app.post("/api/tickets", authMiddleware, async (req: Request, res: Response) => {
+    const { type, entityType, entityId, assignedTo, dueBy, policyJson } = req.body;
+    
+    if (!type) {
+      return res.status(400).json({ message: "type is required" });
+    }
+
+    const ticket = await storage.createTicket({
+      ts: new Date(),
+      type,
+      status: "open",
+      assignedTo: assignedTo || null,
+      dueBy: dueBy ? new Date(dueBy) : null,
+      entityType: entityType || "system",
+      entityId: entityId || "unknown",
+      policyJson: policyJson || { severity: "medium", autoEscalate: false },
+    });
+
+    res.status(201).json(ticket);
+  });
+
+  // Webhook endpoints for n8n integration (no auth required for webhooks)
+  app.post("/api/webhooks/whatsapp/alert", async (req: Request, res: Response) => {
+    // This endpoint can be called by n8n when an alert is created
+    // It receives the alert data and sends WhatsApp message
+    try {
+      const { sendWhatsAppMessage, formatAlertMessage } = await import("./services/whatsapp");
+      const alert = req.body;
+      
+      if (!alert || !alert.message) {
+        return res.status(400).json({ message: "Invalid alert data" });
+      }
+
+      const message = formatAlertMessage(alert);
+      const success = await sendWhatsAppMessage(message, { 
+        alertId: alert.id,
+        to: req.body.to || undefined,
+      });
+
+      res.json({ success, message: success ? "WhatsApp message sent" : "Failed to send WhatsApp message" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/webhooks/whatsapp/ticket", async (req: Request, res: Response) => {
+    // This endpoint can be called by n8n when a ticket is created
+    // It receives the ticket data and sends WhatsApp message
+    try {
+      const { sendWhatsAppMessage, formatTicketMessage } = await import("./services/whatsapp");
+      const ticket = req.body;
+      
+      if (!ticket || !ticket.type) {
+        return res.status(400).json({ message: "Invalid ticket data" });
+      }
+
+      const message = formatTicketMessage(ticket);
+      const success = await sendWhatsAppMessage(message, { 
+        ticketId: ticket.id,
+        to: req.body.to || undefined,
+      });
+
+      res.json({ success, message: success ? "WhatsApp message sent" : "Failed to send WhatsApp message" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   app.get("/api/dashboard/stats", authMiddleware, async (req: Request, res: Response) => {

@@ -398,7 +398,24 @@ export class MemStorage implements IStorage {
     const id = `A-${String(this.alerts.size + 1).padStart(3, '0')}`;
     const newAlert: Alert = { ...alert, id, ts: new Date() };
     this.alerts.set(id, newAlert);
+    
+    // Trigger WhatsApp notification (async, don't wait)
+    this.sendAlertWhatsApp(newAlert).catch(err => 
+      console.error("[Storage] Failed to send alert WhatsApp:", err)
+    );
+    
     return newAlert;
+  }
+
+  private async sendAlertWhatsApp(alert: Alert): Promise<void> {
+    try {
+      const { sendWhatsAppMessage, formatAlertMessage } = await import("./services/whatsapp");
+      const message = formatAlertMessage(alert);
+      await sendWhatsAppMessage(message, { alertId: alert.id });
+    } catch (error) {
+      // Silently fail if WhatsApp service is not available
+      console.error("[Storage] WhatsApp service error:", error);
+    }
   }
 
   async acknowledgeAlert(id: string, userId: string): Promise<Alert | undefined> {
@@ -425,7 +442,24 @@ export class MemStorage implements IStorage {
     const id = `T-${String(this.tickets.size + 1).padStart(3, '0')}`;
     const newTicket: Ticket = { ...ticket, id, ts: new Date() };
     this.tickets.set(id, newTicket);
+    
+    // Trigger WhatsApp notification (async, don't wait)
+    this.sendTicketWhatsApp(newTicket).catch(err => 
+      console.error("[Storage] Failed to send ticket WhatsApp:", err)
+    );
+    
     return newTicket;
+  }
+
+  private async sendTicketWhatsApp(ticket: Ticket): Promise<void> {
+    try {
+      const { sendWhatsAppMessage, formatTicketMessage } = await import("./services/whatsapp");
+      const message = formatTicketMessage(ticket);
+      await sendWhatsAppMessage(message, { ticketId: ticket.id });
+    } catch (error) {
+      // Silently fail if WhatsApp service is not available
+      console.error("[Storage] WhatsApp service error:", error);
+    }
   }
 
   async updateTicketStatus(id: string, status: string): Promise<Ticket | undefined> {
