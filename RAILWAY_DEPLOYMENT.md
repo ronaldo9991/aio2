@@ -2,11 +2,12 @@
 
 This application is configured to deploy on Railway with port 8080.
 
-## ⚠️ CRITICAL: Environment Variables
+## Environment Variables
 
-**YOU MUST SET THESE IN YOUR RAILWAY PROJECT SETTINGS BEFORE DEPLOYMENT:**
+**Optional (but recommended for production):**
 
-1. **`SESSION_SECRET`** (REQUIRED) - The application will **NOT START** without this.
+1. **`SESSION_SECRET`** (Optional) - For production security
+   - If not set, a default secret will be used (not recommended for production)
    - Generate a strong random string (at least 32 characters)
    - Example: `openssl rand -hex 32` or use a password generator
    - Set this in Railway: Project Settings → Variables → Add `SESSION_SECRET`
@@ -15,7 +16,7 @@ This application is configured to deploy on Railway with port 8080.
 
 3. **`NODE_ENV`** - Set automatically by Railway to `production`
 
-**If `SESSION_SECRET` is missing, the server will crash immediately on startup.**
+**Note:** The application will work without `SESSION_SECRET`, but it's recommended to set it in production for security.
 
 ## Build & Deploy
 
@@ -38,14 +39,7 @@ Railway will automatically check if the service is running on the configured por
 
 ## Troubleshooting
 
-### Server Crashes on Startup
-
-**Most Common Issue: Missing `SESSION_SECRET`**
-- Error in logs: `SESSION_SECRET environment variable is required`
-- **Solution**: Go to Railway Project Settings → Variables → Add `SESSION_SECRET` with a strong random string
-- The server checks for this variable at startup and will crash if it's missing
-
-### Other Common Issues
+### Common Issues
 
 1. **Build Errors**: Check Railway build logs for TypeScript or dependency errors
 2. **Module Not Found**: Ensure all dependencies are in `package.json` (not just devDependencies)
@@ -55,9 +49,6 @@ Railway will automatically check if the service is running on the configured por
 ### Testing Locally Before Deployment
 
 ```bash
-# Set SESSION_SECRET
-export SESSION_SECRET="your-test-secret-key-here"
-
 # Build
 npm run build
 
@@ -66,6 +57,10 @@ npm start
 
 # Test health endpoint
 curl http://localhost:8080/api/health
+
+# Optional: Set SESSION_SECRET for production-like testing
+export SESSION_SECRET="your-test-secret-key-here"
+npm start
 ```
 
 ### Railway Logs

@@ -11,11 +11,9 @@ import { generateBaselineSchedule, generateRiskAwareSchedule } from "./services/
 import { predictFailureRisk, detectAnomalies, forecastExponentialSmoothing, trainFailureModel } from "./services/mlModels";
 import { parse } from 'csv-parse/sync';
 
-const JWT_SECRET = process.env.SESSION_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error("SESSION_SECRET environment variable is required");
-}
+// Use SESSION_SECRET from environment or fallback to a default (for development/demo)
+// In production, you should set SESSION_SECRET for security
+const JWT_SECRET = process.env.SESSION_SECRET || "default-dev-secret-change-in-production";
 
 interface AuthRequest extends Request {
   user?: AuthUser;
