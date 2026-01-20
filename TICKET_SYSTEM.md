@@ -26,6 +26,10 @@ BASE_URL=https://aio2-production.up.railway.app
 N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 N8N_SHARED_SECRET=7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
 
+# n8n Inbound Webhook (for WhatsApp replies from manager)
+N8N_INBOUND_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound
+N8N_INBOUND_SECRET=<generate-secure-random-string>
+
 # Railway Inbound API Key (for n8n to call back)
 RAILWAY_INBOUND_SECRET=another-secure-random-string-here
 

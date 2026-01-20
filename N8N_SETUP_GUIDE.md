@@ -92,11 +92,17 @@ curl -X POST https://aio2-production.up.railway.app/api/ticket \
 
 ## n8n Workflow 2: WhatsApp Reply → Update Ticket
 
-### Step 1: Twilio Trigger (Incoming WhatsApp)
+### Step 1: Webhook Node (Receive from Twilio)
 
-1. Add a **Twilio Trigger** node
-2. Configure Twilio webhook to point to this n8n workflow URL
-3. In Twilio Console → WhatsApp → Sandbox/Number → Configure webhook URL
+1. Add a **Webhook** node
+2. Configure:
+   - **HTTP Method**: `POST`
+   - **Path**: `/webhook-test/twilio/whatsapp-inbound` (matches your URL)
+   - **Authentication**: `Header Auth`
+     - **Name**: `x-api-key`
+     - **Value**: `{{ $env.N8N_INBOUND_SECRET }}` (or hardcode: `20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3`)
+
+**Note:** Twilio will send WhatsApp messages to this webhook URL. Configure Twilio webhook in Twilio Console → WhatsApp → Sandbox/Number → Set webhook URL to: `https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound`
 
 ### Step 2: Function Node (Parse Reply)
 
@@ -139,7 +145,7 @@ return {
    - **URL**: `https://aio2-production.up.railway.app/ticket/inbound`
    - **Headers**:
      - `Content-Type`: `application/json`
-     - `x-api-key`: `{{ $env.RAILWAY_INBOUND_SECRET }}`
+     - `x-api-key`: `{{ $env.RAILWAY_INBOUND_SECRET }}` (or hardcode: `44214f24e57b423afecff36860965a1ae979f15a884703166a6aafbd05f8d5ca`)
    - **Body**: JSON from previous node:
      ```json
      {
@@ -151,6 +157,10 @@ return {
        "mediaUrl": "{{ $json.mediaUrl }}"
      }
      ```
+
+**Note:** Only call Railway if no error occurred:
+- Add a condition: `{{ $json.error }}` is falsy
+- Or use an IF node to check for errors before calling Railway
 
 ### Step 4: Error Handling (Optional)
 

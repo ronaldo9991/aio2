@@ -40,11 +40,17 @@ Click **"Add"**
 Name:  N8N_SHARED_SECRET
 Value: 7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
 ```
+
+#### Variable 4: N8N_INBOUND_SECRET (for WhatsApp replies)
+```
+Name:  N8N_INBOUND_SECRET
+Value: 20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3
+```
 Click **"Add"**
 
 ---
 
-#### Variable 4: RAILWAY_INBOUND_SECRET
+#### Variable 5: RAILWAY_INBOUND_SECRET
 
 **First, generate a secret:**
 - Open terminal/command prompt
@@ -62,10 +68,11 @@ Click **"Add"**
 
 ### Step 4: Verify All Variables
 
-You should see these 4 variables in your list:
+You should see these 5 variables in your list:
 - ✅ BASE_URL
 - ✅ N8N_TICKET_CREATED_WEBHOOK
 - ✅ N8N_SHARED_SECRET
+- ✅ N8N_INBOUND_SECRET
 - ✅ RAILWAY_INBOUND_SECRET
 
 ### Step 5: Redeploy
@@ -87,7 +94,9 @@ N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticke
 
 N8N_SHARED_SECRET=7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
 
-RAILWAY_INBOUND_SECRET=<generate using: openssl rand -hex 32>
+N8N_INBOUND_SECRET=20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3
+
+RAILWAY_INBOUND_SECRET=44214f24e57b423afecff36860965a1ae979f15a884703166a6aafbd05f8d5ca
 ```
 
 ---
