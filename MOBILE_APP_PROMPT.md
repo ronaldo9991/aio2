@@ -638,12 +638,19 @@ Explanation: Lower energy = Lower costs = Better for environment
 
 ---
 
-## 12. TICKETS PAGE
+## 12. TICKETS PAGE (Support Ticket System with n8n Integration)
 
 ### Header
 - **Icon**: Ticket
-- **Title**: "Tickets"
-- **Subtitle**: "Work orders and task management"
+- **Title**: "Support Tickets"
+- **Subtitle**: "Customer support tickets with WhatsApp integration via n8n"
+
+### Info Alert
+Explanation of support ticket system:
+- Customers create tickets via mobile app
+- Tickets automatically sent to manager via WhatsApp (n8n webhook)
+- Manager replies via WhatsApp, messages appear in ticket thread
+- Real-time updates when new messages arrive
 
 ### KPI Grid (4 Chips)
 1. **Open Tickets**: 2-3
@@ -652,36 +659,535 @@ Explanation: Lower energy = Lower costs = Better for environment
 4. **Total Tickets**: 5
 
 ### Create Ticket Button
-- Floating action button or header button
-- Opens create ticket dialog
+- Floating action button (FAB) with plus icon
+- Opens create ticket dialog/modal
 
 ### Tickets Table
 - **Columns**:
-  - Ticket ID (T-001, T-002, etc.)
-  - Type (MAINTENANCE, QUALITY_ISSUE, SCHEDULE_CHANGE, APPROVAL_REQUEST)
+  - Ticket Reference (T-20250115-1234 format: T-YYYYMMDD-XXXX)
+  - Customer Name
+  - Subject
+  - Priority (low/medium/high/urgent with color badges)
   - Status (open/in_progress/resolved/closed with color badges)
-  - Assigned To (name or "Unassigned")
-  - Entity ID
-  - Due By (date, red if overdue)
+  - Created At (timestamp, formatted)
+  - Last Message (time ago, e.g., "2 hours ago")
+  - Unread Badge (red dot if unread messages)
   - Actions (View button)
 - **Sortable**: All columns
-- **Filterable**: By status, type
+- **Filterable**: By status, priority
+- **Pull to Refresh**: Refresh ticket list
 
-### Create Ticket Dialog
-- **Fields**:
-  - Customer Name (text)
-  - Customer Phone (text)
-  - Customer Email (email)
-  - Subject (text)
-  - Message (textarea)
-  - Priority (dropdown: low/medium/high/urgent)
-- **Submit Button**: Creates ticket and sends n8n webhook
+### Create Ticket Dialog/Modal
+- **Full-screen modal on mobile**
+- **Form Fields**:
+  - **Customer Name** (text input, required)
+  - **Customer Phone** (text input with phone formatting, required)
+    - Format: +1234567890
+    - Country code picker
+  - **Customer Email** (email input, required)
+    - Email validation
+  - **Subject** (text input, required)
+    - Max 200 characters
+  - **Message** (textarea, required)
+    - Min 10 characters
+    - Max 5000 characters
+    - Character counter
+  - **Priority** (dropdown/picker, default: medium)
+    - Options: low, medium, high, urgent
+    - Color-coded badges
+- **Submit Button**: 
+  - Shows loading state
+  - Creates ticket via `POST /api/ticket`
+  - Displays success message with ticket reference
+  - Automatically triggers n8n webhook to send WhatsApp notification
+- **Cancel Button**: Closes modal without saving
 
-### Ticket Details View
-- Full ticket information
-- Conversation thread (web + WhatsApp messages)
-- Add reply functionality
-- Status update buttons
+### Ticket Details View (Full Screen)
+
+#### Header Section
+- **Ticket Reference**: Large, prominent (T-20250115-1234)
+- **Status Badge**: Color-coded (open/in_progress/resolved/closed)
+- **Priority Badge**: Color-coded (low/medium/high/urgent)
+- **Back Button**: Returns to tickets list
+- **Menu Button**: Options (Mark as resolved, Close ticket, etc.)
+
+#### Ticket Information Card
+- **Customer Name**: John Doe
+- **Customer Phone**: +1234567890 (tap to call)
+- **Customer Email**: john@example.com (tap to email)
+- **Subject**: Product Quality Issue
+- **Created At**: January 15, 2025, 10:30 AM
+- **Last Updated**: January 15, 2025, 11:45 AM
+- **WhatsApp Status**: 
+  - "Sent to manager" (green checkmark)
+  - "Waiting for reply" (yellow clock)
+  - "Manager replied" (green checkmark)
+
+#### Conversation Thread
+- **Chat-style interface** (like WhatsApp/iMessage)
+- **Messages displayed chronologically** (oldest to newest)
+- **Message Bubbles**:
+  - **Customer messages** (left-aligned, blue/gray):
+    - Sender: "Customer"
+    - Channel badge: "Web" (small badge)
+    - Message body
+    - Timestamp (e.g., "10:30 AM")
+    - Media (if any): Image/video preview
+  - **Manager messages** (right-aligned, green):
+    - Sender: "Manager"
+    - Channel badge: "WhatsApp" (small badge with WhatsApp icon)
+    - Message body
+    - Timestamp (e.g., "11:45 AM")
+    - Media (if any): Image/video preview
+- **Loading Indicator**: Shows when fetching messages
+- **Empty State**: "No messages yet" if thread is empty
+- **Auto-scroll**: Scrolls to bottom when new message arrives
+
+#### Add Reply Section (Customer Only)
+- **Text Input**: 
+  - Placeholder: "Type your reply..."
+  - Multi-line support
+  - Character counter (max 5000)
+- **Attach Media Button**: 
+  - Camera icon
+  - Opens camera/gallery picker
+  - Supports images and videos
+- **Send Button**: 
+  - Sends reply via `POST /api/ticket/:ticketRef/reply` (if implemented)
+  - Or creates new ticket for follow-up
+- **Note**: Customer replies create new tickets; manager replies come via WhatsApp
+
+#### Real-Time Updates
+- **WebSocket/Polling**: 
+  - Polls `GET /api/ticket/:ticketRef` every 5 seconds when ticket is open
+  - Or uses WebSocket for real-time updates
+- **Push Notification**: 
+  - Receives push notification when manager replies via WhatsApp
+  - Notification shows: "New reply from manager on ticket T-20250115-1234"
+  - Tapping notification opens ticket details
+- **Badge Update**: 
+  - Updates unread count in tickets list
+  - Red dot indicator on ticket row
+
+### n8n Integration Flow
+
+#### Flow 1: Create Ticket → WhatsApp Notification
+
+**Step 1: Mobile App Creates Ticket**
+```
+Mobile App → POST /api/ticket
+{
+  "customerName": "John Doe",
+  "customerPhone": "+1234567890",
+  "customerEmail": "john@example.com",
+  "subject": "Product Quality Issue",
+  "message": "I received damaged bottles in my last order.",
+  "priority": "high"
+}
+```
+
+**Step 2: Backend Creates Ticket & Calls n8n**
+```
+Backend → POST https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
+Headers:
+  x-api-key: <N8N_SHARED_SECRET>
+Body:
+{
+  "ticketRef": "T-20250115-1234",
+  "ticketId": "uuid-here",
+  "customerName": "John Doe",
+  "customerPhone": "+1234567890",
+  "customerEmail": "john@example.com",
+  "subject": "Product Quality Issue",
+  "message": "I received damaged bottles in my last order.",
+  "priority": "high",
+  "ticketUrl": "https://aio2-production.up.railway.app/ticket/T-20250115-1234",
+  "createdAt": "2025-01-15T10:30:00Z"
+}
+```
+
+**Step 3: n8n Sends WhatsApp Message**
+```
+n8n → Twilio → WhatsApp Manager (+919655716000)
+
+Message Format:
+🎫 *NEW SUPPORT TICKET*
+
+*Ticket:* T-20250115-1234
+*Customer:* John Doe
+*Phone:* +1234567890
+*Email:* john@example.com
+*Priority:* HIGH
+*Subject:* Product Quality Issue
+
+*Message:*
+I received damaged bottles in my last order.
+
+*View Ticket:* https://aio2-production.up.railway.app/ticket/T-20250115-1234
+
+Reply to this message to respond to the ticket.
+```
+
+**Step 4: Mobile App Shows Success**
+- Success toast: "Ticket T-20250115-1234 created successfully. Manager has been notified via WhatsApp."
+- Navigate to ticket details view
+- Show "Sent to manager" status
+
+#### Flow 2: Manager Replies via WhatsApp → Ticket Updated
+
+**Step 1: Manager Replies on WhatsApp**
+```
+Manager → WhatsApp → Twilio
+Message: "Thank you for reporting this. We'll investigate immediately."
+```
+
+**Step 2: Twilio Triggers n8n Webhook**
+```
+Twilio → n8n Webhook (Twilio Trigger Node)
+{
+  "Body": "Thank you for reporting this. We'll investigate immediately.",
+  "From": "whatsapp:+919655716000",
+  "MessageSid": "SM1234567890abcdef",
+  "MediaUrl0": null
+}
+```
+
+**Step 3: n8n Processes & Calls Backend**
+```
+n8n → POST https://aio2-production.up.railway.app/api/ticket/inbound
+Headers:
+  Content-Type: application/json
+  x-api-key: <RAILWAY_INBOUND_SECRET>
+Body:
+{
+  "ticketRef": "T-20250115-1234",
+  "message": "Thank you for reporting this. We'll investigate immediately.",
+  "from": "+919655716000",
+  "channel": "whatsapp",
+  "externalId": "SM1234567890abcdef",
+  "mediaUrl": null
+}
+```
+
+**Step 4: Backend Adds Message to Ticket**
+- Validates API key
+- Finds ticket by ticketRef
+- Checks idempotency (externalId)
+- Adds message to conversation thread
+- Returns success
+
+**Step 5: Mobile App Receives Update**
+- **Push Notification**: "New reply from manager on ticket T-20250115-1234"
+- **Real-time Update**: If ticket details are open, message appears immediately
+- **Badge Update**: Unread count increases
+- **Sound/Vibration**: Notification sound plays
+
+### n8n Configuration Details
+
+#### Environment Variables (Backend)
+```bash
+BASE_URL=https://aio2-production.up.railway.app
+N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
+N8N_SHARED_SECRET=<generate-with-openssl-rand-hex-32>
+RAILWAY_INBOUND_SECRET=<generate-with-openssl-rand-hex-32>
+AGENT_PHONE=+919655716000
+```
+
+#### n8n Workflow 1: Ticket Created → WhatsApp
+
+**Node 1: Webhook (Trigger)**
+- Method: POST
+- Path: `/webhook/ticket-created`
+- Authentication: Header Auth
+  - Name: `x-api-key`
+  - Value: `{{ $env.N8N_SHARED_SECRET }}`
+
+**Node 2: Function (Format Message)**
+```javascript
+const ticket = $input.item.json;
+
+return {
+  to: '+919655716000',  // Operation Manager
+  body: `🎫 *NEW SUPPORT TICKET*
+
+*Ticket:* ${ticket.ticketRef}
+*Customer:* ${ticket.customerName}
+*Phone:* ${ticket.customerPhone}
+*Email:* ${ticket.customerEmail}
+*Priority:* ${ticket.priority.toUpperCase()}
+*Subject:* ${ticket.subject}
+
+*Message:*
+${ticket.message}
+
+*View Ticket:* ${ticket.ticketUrl}
+
+Reply to this message to respond to the ticket.`
+};
+```
+
+**Node 3: Twilio (Send WhatsApp)**
+- Account SID: `{{ $env.TWILIO_ACCOUNT_SID }}`
+- Auth Token: `{{ $env.TWILIO_AUTH_TOKEN }}`
+- From: `whatsapp:{{ $env.TWILIO_WHATSAPP_FROM }}`
+- To: `{{ $json.to }}`
+- Message: `{{ $json.body }}`
+
+#### n8n Workflow 2: WhatsApp Reply → Update Ticket
+
+**Node 1: Twilio Trigger (Incoming WhatsApp)**
+- Configure Twilio webhook to call this n8n workflow
+- Twilio → WhatsApp → n8n webhook
+
+**Node 2: Function (Parse Reply)**
+```javascript
+const message = $input.item.json;
+
+// Extract ticketRef from message body or conversation context
+// For now, assume ticketRef is in message body or use conversation mapping
+
+// If ticketRef is in message: "T-20250115-1234: Thank you..."
+const ticketRefMatch = message.Body.match(/T-\d{8}-\d{4}/);
+const ticketRef = ticketRefMatch ? ticketRefMatch[0] : extractFromContext(message);
+
+// Remove ticketRef from message body if present
+const cleanMessage = message.Body.replace(/T-\d{8}-\d{4}:\s*/, '');
+
+return {
+  ticketRef: ticketRef,
+  message: cleanMessage,
+  from: message.From.replace('whatsapp:', ''),
+  channel: 'whatsapp',
+  externalId: message.MessageSid,
+  mediaUrl: message.MediaUrl0 || null
+};
+```
+
+**Node 3: HTTP Request (Call Railway)**
+- Method: POST
+- URL: `https://aio2-production.up.railway.app/api/ticket/inbound`
+- Headers:
+  - `Content-Type: application/json`
+  - `x-api-key: {{ $env.RAILWAY_INBOUND_SECRET }}`
+- Body: JSON from Function Node
+
+### API Endpoints for Mobile
+
+#### Create Ticket
+```
+POST /api/ticket
+Content-Type: application/json
+
+Request:
+{
+  "customerName": "John Doe",
+  "customerPhone": "+1234567890",
+  "customerEmail": "john@example.com",
+  "subject": "Product Quality Issue",
+  "message": "I received damaged bottles in my last order.",
+  "priority": "high"
+}
+
+Response:
+{
+  "ok": true,
+  "ticketRef": "T-20250115-1234",
+  "ticketId": "uuid-here"
+}
+
+Error Response (400):
+{
+  "ok": false,
+  "error": "Validation failed",
+  "details": {
+    "customerName": "Required",
+    "customerPhone": "Invalid format"
+  }
+}
+```
+
+#### Get Ticket with Messages
+```
+GET /api/ticket/:ticketRef
+
+Response:
+{
+  "ok": true,
+  "ticket": {
+    "id": "uuid",
+    "ticketRef": "T-20250115-1234",
+    "subject": "Product Quality Issue",
+    "status": "open",
+    "customerName": "John Doe",
+    "customerPhone": "+1234567890",
+    "customerEmail": "john@example.com",
+    "priority": "high",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T11:45:00Z"
+  },
+  "messages": [
+    {
+      "id": "msg-uuid-1",
+      "sender": "customer",
+      "channel": "web",
+      "body": "I received damaged bottles in my last order.",
+      "mediaUrl": null,
+      "createdAt": "2025-01-15T10:30:00Z"
+    },
+    {
+      "id": "msg-uuid-2",
+      "sender": "manager",
+      "channel": "whatsapp",
+      "body": "Thank you for reporting this. We'll investigate immediately.",
+      "mediaUrl": null,
+      "createdAt": "2025-01-15T11:45:00Z"
+    }
+  ]
+}
+
+Error Response (404):
+{
+  "ok": false,
+  "error": "Ticket not found"
+}
+```
+
+#### List All Tickets (Optional - if implemented)
+```
+GET /api/tickets?status=open&priority=high
+
+Response:
+{
+  "ok": true,
+  "tickets": [
+    {
+      "id": "uuid",
+      "ticketRef": "T-20250115-1234",
+      "subject": "Product Quality Issue",
+      "status": "open",
+      "priority": "high",
+      "customerName": "John Doe",
+      "createdAt": "2025-01-15T10:30:00Z",
+      "updatedAt": "2025-01-15T11:45:00Z",
+      "unreadCount": 1
+    }
+  ]
+}
+```
+
+### Mobile App Implementation Details
+
+#### Ticket Creation Flow
+1. User taps "Create Ticket" button
+2. Modal opens with form
+3. User fills in all required fields
+4. Form validation (client-side)
+5. Submit button shows loading state
+6. API call to `POST /api/ticket`
+7. On success:
+   - Show success toast with ticket reference
+   - Close modal
+   - Navigate to ticket details
+   - Show "Sent to manager" status
+   - n8n webhook is automatically called by backend (non-blocking)
+8. On error:
+   - Show error message
+   - Highlight invalid fields
+   - Keep modal open
+
+#### Ticket Details View Flow
+1. User taps ticket from list
+2. Navigate to ticket details screen
+3. Fetch ticket data via `GET /api/ticket/:ticketRef`
+4. Display ticket info and conversation thread
+5. Start polling every 5 seconds (or use WebSocket)
+6. When new message arrives:
+   - Add to conversation thread
+   - Scroll to bottom
+   - Show notification badge
+   - Play notification sound
+   - Update "Last Updated" timestamp
+
+#### Real-Time Updates
+- **Polling**: Poll `GET /api/ticket/:ticketRef` every 5 seconds when screen is active
+- **WebSocket** (if implemented): Subscribe to ticket updates
+- **Push Notifications**: 
+  - Register for push notifications on app launch
+  - Receive notification when manager replies
+  - Deep link to ticket details on tap
+
+#### Push Notification Payload
+```json
+{
+  "title": "New Reply on Ticket",
+  "body": "Manager replied to ticket T-20250115-1234",
+  "data": {
+    "type": "ticket_reply",
+    "ticketRef": "T-20250115-1234",
+    "screen": "ticket_details"
+  }
+}
+```
+
+#### Error Handling
+- **Network Error**: Show "No internet connection" message
+- **401 Unauthorized**: Redirect to login
+- **404 Not Found**: Show "Ticket not found" message
+- **500 Server Error**: Show "Server error, please try again"
+- **Validation Error**: Show field-specific errors
+
+#### Offline Support
+- Cache ticket list locally
+- Cache ticket details when viewed
+- Queue ticket creation if offline
+- Sync when connection restored
+- Show "Offline" indicator
+
+### UI/UX Considerations
+
+#### Ticket List
+- **Swipe Actions**: 
+  - Swipe left: Mark as resolved
+  - Swipe right: Archive/Delete
+- **Pull to Refresh**: Refresh ticket list
+- **Search Bar**: Search by ticket reference, customer name, subject
+- **Filter Chips**: Quick filters (Open, In Progress, Resolved, Closed)
+- **Sort Options**: By date, priority, status
+
+#### Ticket Details
+- **Swipe to Dismiss**: Swipe down to close
+- **Share Button**: Share ticket details
+- **Copy Ticket Ref**: Long press to copy ticket reference
+- **Call Customer**: Tap phone number to call
+- **Email Customer**: Tap email to send email
+
+#### Conversation Thread
+- **Message Bubbles**: 
+  - Customer: Left-aligned, blue/gray background
+  - Manager: Right-aligned, green background
+- **Timestamps**: Show relative time (e.g., "2 hours ago")
+- **Read Receipts**: Show "Delivered" and "Read" indicators
+- **Media Preview**: Show thumbnails for images/videos
+- **Tap to Expand**: Tap media to view full screen
+
+### Testing Checklist
+
+- [ ] Create ticket with all fields
+- [ ] Create ticket with validation errors
+- [ ] View ticket details
+- [ ] Conversation thread displays correctly
+- [ ] Real-time updates work (polling/WebSocket)
+- [ ] Push notifications received when manager replies
+- [ ] n8n webhook called successfully
+- [ ] WhatsApp message sent to manager
+- [ ] Manager reply appears in conversation
+- [ ] Idempotency works (duplicate messages prevented)
+- [ ] Offline mode works (cache, queue, sync)
+- [ ] Error handling works (network, 401, 404, 500)
+- [ ] Pull to refresh works
+- [ ] Search and filter work
+- [ ] Swipe actions work
+- [ ] Deep linking works (from push notification)
 
 ---
 

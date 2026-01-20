@@ -604,6 +604,50 @@ export class MemStorage implements IStorage {
     return this.ticketMessages.get(messageId);
   }
 
+  async deleteTicket(id: string): Promise<boolean> {
+    const ticket = this.tickets.get(id);
+    if (!ticket) return false;
+    
+    // Delete ticket
+    this.tickets.delete(id);
+    
+    // Delete ticketRef index if exists
+    if (ticket.ticketRef) {
+      this.ticketRefIndex.delete(ticket.ticketRef);
+    }
+    
+    // Delete all messages for this ticket
+    const messagesToDelete: string[] = [];
+    this.ticketMessages.forEach((msg, msgId) => {
+      if (msg.ticketId === id) {
+        messagesToDelete.push(msgId);
+        // Remove externalId index if exists
+        if (msg.externalId) {
+          this.externalIdIndex.delete(msg.externalId);
+        }
+      }
+    });
+    messagesToDelete.forEach(msgId => this.ticketMessages.delete(msgId));
+    
+    return true;
+  }
+
+  async deleteAllTickets(): Promise<number> {
+    const count = this.tickets.size;
+    
+    // Clear all tickets
+    this.tickets.clear();
+    
+    // Clear all ticket messages
+    this.ticketMessages.clear();
+    
+    // Clear all indexes
+    this.ticketRefIndex.clear();
+    this.externalIdIndex.clear();
+    
+    return count;
+  }
+
   async getApprovals(): Promise<Approval[]> {
     return Array.from(this.approvals.values()).sort((a, b) => 
       new Date(b.ts!).getTime() - new Date(a.ts!).getTime()
