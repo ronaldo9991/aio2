@@ -3,6 +3,14 @@
 ## Overview
 Build a native mobile application (React Native or Flutter) that replicates the PETBottle AI Ops web dashboard with **identical functionality, values, and visual output** from top to bottom. The app should provide the same user experience as the web version, optimized for mobile devices.
 
+### Key Features
+- **19 Complete Pages** - All dashboard pages with identical functionality
+- **Support Ticket System** - Full customer support with n8n WhatsApp integration
+- **Real-Time Updates** - Live data refresh and push notifications
+- **Offline Support** - Cached data and offline-first architecture
+- **Biometric Authentication** - Face ID / Touch ID / Fingerprint support
+- **Deep Linking** - Direct navigation to specific pages/tickets
+
 ## Application Identity
 - **Name**: AQUAINTEL - PETBottle AI Ops
 - **Tagline**: Intelligent Manufacturing Dashboard for Plastic Bottle Production
@@ -1501,9 +1509,10 @@ Each recommendation card shows:
 - `GET /energy/comparison` - Energy comparison
 - `GET /alerts` - Alerts list
 - `POST /alerts/:id/ack` - Acknowledge alert
-- `GET /tickets` - Tickets list
-- `POST /ticket` - Create ticket
-- `GET /ticket/:ticketRef` - Get ticket with messages
+- `GET /tickets` - Tickets list (optional, if implemented)
+- `POST /ticket` - Create customer support ticket (triggers n8n webhook)
+- `GET /ticket/:ticketRef` - Get ticket with full conversation thread
+- `POST /ticket/inbound` - Receive WhatsApp replies from n8n (protected, requires x-api-key)
 - `GET /approvals` - Approvals list
 - `POST /approvals/:id/approve` - Approve request
 - `POST /approvals/:id/reject` - Reject request
@@ -1513,6 +1522,98 @@ Each recommendation card shows:
 - `GET /datasets` - Datasets list
 - `POST /upload-csv` - Upload CSV
 - `POST /datasets/generate-demo` - Generate demo data
+
+### Support Ticket Endpoints (n8n Integration)
+
+#### Create Ticket
+```
+POST /api/ticket
+Content-Type: application/json
+
+Request Body:
+{
+  "customerName": "John Doe",
+  "customerPhone": "+1234567890",
+  "customerEmail": "john@example.com",
+  "subject": "Product Quality Issue",
+  "message": "I received damaged bottles in my last order.",
+  "priority": "high"  // low, medium, high, urgent
+}
+
+Response:
+{
+  "ok": true,
+  "ticketRef": "T-20250115-1234",
+  "ticketId": "uuid-here"
+}
+
+Note: Automatically triggers n8n webhook to send WhatsApp notification to manager
+```
+
+#### Get Ticket with Messages
+```
+GET /api/ticket/:ticketRef
+
+Response:
+{
+  "ok": true,
+  "ticket": {
+    "id": "uuid",
+    "ticketRef": "T-20250115-1234",
+    "subject": "Product Quality Issue",
+    "status": "open",
+    "customerName": "John Doe",
+    "customerPhone": "+1234567890",
+    "customerEmail": "john@example.com",
+    "priority": "high",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T11:45:00Z"
+  },
+  "messages": [
+    {
+      "id": "msg-uuid-1",
+      "sender": "customer",
+      "channel": "web",
+      "body": "I received damaged bottles in my last order.",
+      "mediaUrl": null,
+      "createdAt": "2025-01-15T10:30:00Z"
+    },
+    {
+      "id": "msg-uuid-2",
+      "sender": "manager",
+      "channel": "whatsapp",
+      "body": "Thank you for reporting this. We'll investigate immediately.",
+      "mediaUrl": null,
+      "createdAt": "2025-01-15T11:45:00Z"
+    }
+  ]
+}
+```
+
+#### Inbound WhatsApp Message (n8n → Backend)
+```
+POST /api/ticket/inbound
+Headers:
+  Content-Type: application/json
+  x-api-key: <RAILWAY_INBOUND_SECRET>
+
+Request Body:
+{
+  "ticketRef": "T-20250115-1234",
+  "message": "Thank you for reporting this. We'll investigate immediately.",
+  "from": "+919655716000",
+  "channel": "whatsapp",
+  "externalId": "SM1234567890abcdef",  // Twilio MessageSid (for idempotency)
+  "mediaUrl": "https://..."  // Optional
+}
+
+Response:
+{
+  "ok": true
+}
+
+Note: This endpoint is called by n8n when manager replies via WhatsApp
+```
 
 ### Error Handling
 - Network errors: Show user-friendly message
@@ -1549,9 +1650,10 @@ Each recommendation card shows:
 
 ### Deep Linking
 - `petbottle://dashboard` - Open dashboard
-- `petbottle://ticket/:id` - Open specific ticket
+- `petbottle://ticket/:ticketRef` - Open specific ticket (e.g., `petbottle://ticket/T-20250115-1234`)
 - `petbottle://alert/:id` - Open specific alert
 - `petbottle://machine/:id` - Open machine details
+- `petbottle://ticket/create` - Open create ticket form
 
 ### Share Functionality
 - Share ticket details
