@@ -228,7 +228,7 @@ return { success: true };
 3. Verify Twilio webhook is configured correctly
 4. Test inbound endpoint manually:
    ```bash
-   curl -X POST https://aio2-production.up.railway.app/api/ticket/inbound \
+   curl -X POST https://aio2-production.up.railway.app/ticket/inbound \
      -H "Content-Type: application/json" \
      -H "x-api-key: your-railway-inbound-secret" \
      -d '{

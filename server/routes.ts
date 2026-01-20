@@ -361,10 +361,12 @@ export async function registerRoutes(
 
   /**
    * POST /api/ticket/inbound
+   * POST /ticket/inbound
    * Receive WhatsApp reply from n8n
    * Protected by x-api-key header
+   * Both routes supported for compatibility
    */
-  app.post("/api/ticket/inbound", async (req: Request, res: Response) => {
+  const handleInboundMessage = async (req: Request, res: Response) => {
     try {
       // Validate API key
       const apiKey = req.headers["x-api-key"];
@@ -438,7 +440,11 @@ export async function registerRoutes(
         error: process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
-  });
+  };
+
+  // Register both routes: /api/ticket/inbound and /ticket/inbound
+  app.post("/api/ticket/inbound", handleInboundMessage);
+  app.post("/ticket/inbound", handleInboundMessage);
 
   /**
    * GET /api/ticket/:ticketRef

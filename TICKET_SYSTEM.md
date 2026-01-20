@@ -142,7 +142,7 @@ curl https://aio2-production.up.railway.app/api/ticket/T-20250115-1234
 
 ### 3. Inbound WhatsApp Message
 
-**POST** `/api/ticket/inbound`
+**POST** `/api/ticket/inbound` or `/ticket/inbound`
 
 Called by n8n when the manager replies via WhatsApp. This endpoint is protected by `x-api-key` header.
 
@@ -173,7 +173,7 @@ Content-Type: application/json
 
 **cURL Example:**
 ```bash
-curl -X POST https://aio2-production.up.railway.app/api/ticket/inbound \
+curl -X POST https://aio2-production.up.railway.app/ticket/inbound \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-railway-inbound-secret" \
   -d '{
