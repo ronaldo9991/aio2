@@ -16,8 +16,11 @@ import {
   BarChart3,
   Users,
   DollarSign,
-  Bot
+  Bot,
+  Gauge,
+  Layers
 } from 'lucide-react';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, RadialBarChart, RadialBar, Legend, Tooltip, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -450,97 +453,266 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Production Breakdown: Machines vs Robotics - Combined Stacked Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Production per Hour: Machines vs Robotics</CardTitle>
-          <CardDescription>Hourly bottle production breakdown by system type</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[360px] relative">
-            <div className="absolute inset-0 flex flex-col">
-              {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-10 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-14">
-                <span className="font-medium">2,500</span>
-                <span className="font-medium">2,000</span>
-                <span className="font-medium">1,500</span>
-                <span className="font-medium">1,000</span>
-                <span className="font-medium">500</span>
-                <span className="font-medium">0</span>
-              </div>
-              
-              {/* Chart area */}
-              <div className="ml-16 mr-4 h-full relative">
-                <div className="absolute inset-0 flex items-end justify-between gap-3 pb-10">
-                  {hourlyProductionData.map((d, i) => {
-                    const machinesValue = machineBottlesPerHourTotal; // 1,350
-                    const roboticsValue = robotBottlesPerHourTotal; // 980
-                    const totalValue = machinesValue + roboticsValue; // 2,330
-                    
-                    const maxValue = 2500;
-                    const machineHeight = (machinesValue / maxValue) * 100;
-                    const robotHeight = (roboticsValue / maxValue) * 100;
-                    
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center h-full">
-                        {/* Value labels above bars */}
-                        <div className="mb-3 text-center space-y-1">
-                          <div className="text-xs font-bold text-blue-400">M: {machinesValue.toLocaleString()}</div>
-                          <div className="text-xs font-bold text-purple-400">R: {roboticsValue.toLocaleString()}</div>
-                          <div className="text-[10px] font-medium text-muted-foreground">Total: {totalValue.toLocaleString()}</div>
-                        </div>
-                        
-                        {/* Stacked bars */}
-                        <div className="flex-1 w-full flex flex-col justify-end min-h-[200px]">
-                          <div className="w-full relative">
-                            {/* Machines bar (bottom) */}
-                            <motion.div
-                              className="w-full bg-blue-500 rounded-t"
-                              initial={{ height: 0 }}
-                              animate={{ height: `${machineHeight}%` }}
-                              transition={{ duration: 0.7, delay: i * 0.06 }}
-                              style={{ minHeight: '2px' }}
-                            />
-                            {/* Robotics bar (top) */}
-                            <motion.div
-                              className="w-full bg-purple-500 rounded-t"
-                              initial={{ height: 0 }}
-                              animate={{ height: `${robotHeight}%` }}
-                              transition={{ duration: 0.7, delay: i * 0.06 + 0.25 }}
-                              style={{ 
-                                minHeight: '2px',
-                                bottom: `${machineHeight}%`
-                              }}
-                            />
-                          </div>
-                    </div>
-                        
-                        {/* Hour label */}
-                        <div className="mt-3 text-xs font-medium text-muted-foreground">{d.hour}</div>
-                  </div>
-                );
-              })}
+      {/* Performance Radar Matrix & Radial Efficiency Sphere */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Performance Radar Matrix */}
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <CardTitle>Performance Radar Matrix</CardTitle>
+            </div>
+            <CardDescription>Multi-dimensional performance analysis</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={400}>
+              <RadarChart data={[
+                {
+                  category: 'Production',
+                  Machines: 75,
+                  Robotics: 85,
+                  fullMark: 100,
+                },
+                {
+                  category: 'Efficiency',
+                  Machines: 70,
+                  Robotics: 92,
+                  fullMark: 100,
+                },
+                {
+                  category: 'Utilization',
+                  Machines: 84,
+                  Robotics: 95,
+                  fullMark: 100,
+                },
+                {
+                  category: 'Cost',
+                  Machines: 88,
+                  Robotics: 72,
+                  fullMark: 100,
+                },
+                {
+                  category: 'Reliability',
+                  Machines: 90,
+                  Robotics: 78,
+                  fullMark: 100,
+                },
+              ]}>
+                <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.3} />
+                <PolarAngleAxis 
+                  dataKey="category" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500 }}
+                />
+                <PolarRadiusAxis 
+                  angle={90} 
+                  domain={[0, 100]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  tickCount={5}
+                />
+                <Radar
+                  name="Machines"
+                  dataKey="Machines"
+                  stroke="hsl(199, 89%, 48%)"
+                  fill="hsl(199, 89%, 48%)"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+                <Radar
+                  name="Robotics"
+                  dataKey="Robotics"
+                  stroke="hsl(280, 70%, 60%)"
+                  fill="hsl(280, 70%, 60%)"
+                  fillOpacity={0.25}
+                  strokeWidth={2}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Radial Efficiency Sphere */}
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Gauge className="w-5 h-5 text-primary" />
+              <CardTitle>Radial Efficiency Sphere</CardTitle>
+            </div>
+            <CardDescription>Circular performance visualization</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <ResponsiveContainer width="100%" height={300}>
+                <RadialBarChart 
+                  cx="50%" 
+                  cy="50%" 
+                  innerRadius="30%" 
+                  outerRadius="80%" 
+                  data={[
+                    { name: 'Machines', value: 84, fill: 'hsl(199, 89%, 48%)' },
+                    { name: 'Robotics', value: 95, fill: 'hsl(280, 70%, 60%)' },
+                  ]}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <RadialBar 
+                    dataKey="value" 
+                    cornerRadius={4}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="circle"
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    formatter={(value: number) => `${value}%`}
+                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">84%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Machines Utilization</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">95%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Robotics Utilization</div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-8 mt-6 pt-4 border-t">
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cost Efficiency & Utilization Comparison */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Cost Efficiency Analysis */}
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm font-medium">Machines: {machineBottlesPerHourTotal.toLocaleString()}/hr</span>
+              <DollarSign className="w-5 h-5 text-primary" />
+              <CardTitle>Cost Efficiency Comparison</CardTitle>
             </div>
+            <CardDescription>Cost per bottle and operational efficiency</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={[
+                { name: 'Cost/Bottle', Machines: 0.095, Robotics: 0.085 },
+                { name: 'Labor Cost/hr', Machines: 125, Robotics: 50 },
+                { name: 'Energy/kWh', Machines: 18.5, Robotics: 12.2 },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  formatter={(value: number, name: string, props: any) => {
+                    const dataKey = props.dataKey;
+                    if (dataKey === 'Machines' || dataKey === 'Robotics') {
+                      const label = props.payload?.name || '';
+                      if (label === 'Cost/Bottle') {
+                        return `$${value.toFixed(3)}`;
+                      } else if (label === 'Labor Cost/hr') {
+                        return `$${value}`;
+                      } else if (label === 'Energy/kWh') {
+                        return `${value} kWh`;
+                      }
+                    }
+                    return value;
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="Machines" fill="hsl(199, 89%, 48%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Robotics" fill="hsl(280, 70%, 60%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Utilization Trend */}
+        <Card className="border-border/50 bg-card/50">
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-purple-500 rounded"></div>
-              <span className="text-sm font-medium">Robotics: {robotBottlesPerHourTotal.toLocaleString()}/hr</span>
+              <Activity className="w-5 h-5 text-primary" />
+              <CardTitle>Utilization Trend (24h)</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Total: {(machineBottlesPerHourTotal + robotBottlesPerHourTotal).toLocaleString()}/hr</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            <CardDescription>Hourly utilization comparison</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={hours.map((hour, i) => ({
+                hour,
+                Machines: 84 + (i % 3) - 1, // 83-85% range
+                Robotics: 95 + (i % 2) - 0.5, // 94.5-95.5% range
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="hour" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                />
+                <YAxis 
+                  domain={[75, 100]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  label={{ value: 'Utilization %', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  formatter={(value: number) => `${value.toFixed(1)}%`}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="Machines" 
+                  stroke="hsl(199, 89%, 48%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(199, 89%, 48%)', r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Robotics" 
+                  stroke="hsl(280, 70%, 60%)" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(280, 70%, 60%)', r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Labor & Cost Metrics */}
       <div className="grid lg:grid-cols-2 gap-6">
