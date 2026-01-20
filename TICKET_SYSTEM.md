@@ -28,10 +28,10 @@ N8N_SHARED_SECRET=7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128f
 
 # n8n Inbound Webhook (for WhatsApp replies from manager)
 N8N_INBOUND_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound
-N8N_INBOUND_SECRET=<generate-secure-random-string>
+N8N_INBOUND_SECRET=20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3
 
-# Railway Inbound API Key (for n8n to call back)
-RAILWAY_INBOUND_SECRET=another-secure-random-string-here
+# Railway Inbound API Key (for n8n to call back to Railway)
+RAILWAY_INBOUND_SECRET=44214f24e57b423afecff36860965a1ae979f15a884703166a6aafbd05f8d5ca
 
 # Optional: Agent phone number (defaults to +919655716000)
 AGENT_PHONE=+919655716000
