@@ -11,6 +11,8 @@ import { AppLayout } from '@/components/AppLayout';
 import { Landing } from '@/pages/Landing';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import { ProfessionalDashboard } from '@/pages/ProfessionalDashboard';
+import { FuturisticDashboard } from '@/pages/FuturisticDashboard';
 import { Schedule } from '@/pages/Schedule';
 import { Machines } from '@/pages/Machines';
 import { Robotics } from '@/pages/Robotics';
@@ -34,6 +36,8 @@ function AppRoutes() {
       <Switch>
         <Route path="/app" component={Dashboard} />
         <Route path="/app/dashboard" component={Dashboard} />
+        <Route path="/app/professional-dashboard" component={ProfessionalDashboard} />
+        <Route path="/app/futuristic-dashboard" component={FuturisticDashboard} />
         <Route path="/app/schedule" component={Schedule} />
         <Route path="/app/machines" component={Machines} />
         <Route path="/app/robotics" component={Robotics} />

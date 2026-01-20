@@ -38,6 +38,8 @@ import {
 
 const mainNavItems = [
   { title: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard' },
+  { title: 'Professional Dashboard', icon: BarChart3, href: '/app/professional-dashboard' },
+  { title: 'Futuristic Dashboard', icon: Sparkles, href: '/app/futuristic-dashboard' },
   { title: 'Schedule', icon: Calendar, href: '/app/schedule' },
   { title: 'Machines', icon: Wrench, href: '/app/machines' },
   { title: 'Robotics', icon: Bot, href: '/app/robotics' },
