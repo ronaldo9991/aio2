@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ticket, Clock, User, CheckCircle2, Plus, Trash2, MessageSquare, Send, Phone, Mail, Globe } from 'lucide-react';
+import { Ticket, Clock, User, CheckCircle2, Plus, Trash2, MessageSquare, Send, Phone, Mail, Globe, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPIChip, KPIGrid } from '@/components/KPIChip';
@@ -74,6 +74,7 @@ export function Tickets() {
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [viewTicketRef, setViewTicketRef] = useState<string | null>(null);
+  const [messageInput, setMessageInput] = useState('');
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -89,8 +90,8 @@ export function Tickets() {
     queryKey: ['/api/tickets'],
   });
 
-  // Fetch ticket details with messages when viewing
-  const { data: ticketDetails, isLoading: isLoadingTicketDetails } = useQuery<TicketWithMessages>({
+  // Fetch ticket details with messages when viewing - with auto-refresh for real-time
+  const { data: ticketDetails, isLoading: isLoadingTicketDetails, refetch: refetchTicketDetails } = useQuery<TicketWithMessages>({
     queryKey: ['/api/ticket', viewTicketRef],
     queryFn: async () => {
       if (!viewTicketRef) return null;
@@ -104,6 +105,52 @@ export function Tickets() {
       return result;
     },
     enabled: !!viewTicketRef,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+  });
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (message: string) => {
+      if (!viewTicketRef) throw new Error('No ticket selected');
+      
+      const response = await fetch('/api/ticket/inbound', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': '44214f24e57b423afecff36860965a1ae979f15a884703166a6aafbd05f8d5ca', // Manager API key
+        },
+        body: JSON.stringify({
+          ticketRef: viewTicketRef,
+          message: message,
+          from: '+919655716000', // Manager phone
+          channel: 'web',
+          externalId: `WEB_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      setMessageInput('');
+      // Refetch immediately to show the new message
+      refetchTicketDetails();
+      toast({
+        title: 'Message Sent',
+        description: 'Your message has been sent successfully.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send message',
+        variant: 'destructive',
+      });
+    },
   });
 
   const createTicketMutation = useMutation({
@@ -655,6 +702,47 @@ export function Tickets() {
                   })
                 )}
               </div>
+
+              {/* Message Input */}
+              <div className="border-t pt-4 mt-4">
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Type your message..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (messageInput.trim() && !sendMessageMutation.isPending) {
+                          sendMessageMutation.mutate(messageInput.trim());
+                        }
+                      }
+                    }}
+                    rows={2}
+                    className="flex-1 resize-none"
+                    disabled={sendMessageMutation.isPending}
+                  />
+                  <Button
+                    onClick={() => {
+                      if (messageInput.trim() && !sendMessageMutation.isPending) {
+                        sendMessageMutation.mutate(messageInput.trim());
+                      }
+                    }}
+                    disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                    size="icon"
+                    className="shrink-0"
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Press Enter to send, Shift+Enter for new line
+                </p>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -663,7 +751,10 @@ export function Tickets() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewTicketRef(null)}>
+            <Button variant="outline" onClick={() => {
+              setViewTicketRef(null);
+              setMessageInput('');
+            }}>
               Close
             </Button>
           </DialogFooter>
