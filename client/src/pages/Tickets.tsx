@@ -636,7 +636,14 @@ export function Tickets() {
               {/* Messages Thread */}
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center justify-between">
-                  <span>Conversation ({ticketDetails.messages.length} messages)</span>
+                  <div className="flex items-center gap-2">
+                    <span>Conversation ({ticketDetails.messages.length} messages)</span>
+                    {ticketDetails.messages.some(msg => msg.channel === 'whatsapp' && msg.sender === 'manager') && (
+                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                        WhatsApp Active
+                      </span>
+                    )}
+                  </div>
                   {isLoadingTicketDetails && (
                     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   )}
@@ -679,9 +686,16 @@ export function Tickets() {
                               <span className={`text-xs font-medium ${isManager ? 'text-blue-400' : 'text-muted-foreground'}`}>
                                 {isManager ? 'Manager' : 'Customer'}
                               </span>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <div className={`flex items-center gap-1 text-xs ${msg.channel === 'whatsapp' ? 'text-green-400' : 'text-muted-foreground'}`}>
                                 <ChannelIcon className="w-3 h-3" />
-                                <span className="capitalize">{msg.channel}</span>
+                                <span className="capitalize">
+                                  {msg.channel === 'whatsapp' ? 'WhatsApp' : msg.channel}
+                                </span>
+                                {msg.channel === 'whatsapp' && isManager && (
+                                  <span className="text-[10px] bg-green-500/20 text-green-400 px-1 rounded">
+                                    Live
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
