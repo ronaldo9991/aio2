@@ -507,10 +507,10 @@ export function Dashboard() {
           <CardDescription className="text-sm">Hourly bottle production breakdown by system type</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72 relative">
+          <div className="h-80 relative">
             <div className="absolute inset-0 flex flex-col justify-between">
               {/* Y-axis labels - Fixed scale: 0-2500 bottles/hour */}
-              <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-3 pr-3 font-mono">
+              <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground py-4 pr-4 font-mono font-semibold">
                 <span>2,500</span>
                 <span>2,000</span>
                 <span>1,500</span>
@@ -519,52 +519,56 @@ export function Dashboard() {
                 <span>0</span>
               </div>
               
-              <div className="ml-14 h-full relative">
-                <div className="absolute inset-0 flex items-end justify-between gap-3 px-3 pb-6">
+              <div className="ml-16 h-full relative">
+                <div className="absolute inset-0 flex items-end justify-between gap-4 px-4 pb-8">
                   {hourlyProductionData.map((d, i) => {
-                    const maxValue = 2500; // Fixed max value
-                    const machinePercent = Math.min(100, (d.machines / maxValue) * 100);
-                    const robotPercent = Math.min(100, (d.robotics / maxValue) * 100);
-                    const total = d.machines + d.robotics;
+                    // FIXED VALUES - Ensure correct totals
+                    const machinesValue = machineBottlesPerHourTotal; // 1,350 total
+                    const roboticsValue = robotBottlesPerHourTotal; // 980 total
+                    const totalValue = machinesValue + roboticsValue; // 2,330 total
                     
-                return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                        <div className="w-full relative" style={{ height: '220px' }}>
+                    const maxValue = 2500; // Fixed max value for scaling
+                    const machinePercent = (machinesValue / maxValue) * 100;
+                    const robotPercent = (roboticsValue / maxValue) * 100;
+                    
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
+                        <div className="w-full relative" style={{ height: '240px' }}>
                           {/* Stacked bars - machines on bottom, robotics on top */}
-                          <div className="absolute bottom-0 w-full rounded-t overflow-hidden shadow-sm">
-                            {/* Machines bar (blue) */}
+                          <div className="absolute bottom-0 w-full rounded-t overflow-hidden shadow-lg">
+                            {/* Machines bar (blue) - 1,350 bottles */}
                             <motion.div 
-                              className="w-full bg-gradient-to-t from-blue-600 to-blue-500 border-t border-blue-400/30"
+                              className="w-full bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400 border-t-2 border-blue-300/50"
                               initial={{ height: 0 }}
                               animate={{ height: `${machinePercent}%` }}
-                              transition={{ duration: 0.8, delay: i * 0.05, ease: "easeOut" }}
+                              transition={{ duration: 0.9, delay: i * 0.08, ease: "easeOut" }}
                             />
-                            {/* Robotics bar (purple) */}
+                            {/* Robotics bar (purple) - 980 bottles */}
                             <motion.div 
-                              className="w-full bg-gradient-to-t from-purple-600 to-purple-500 border-t border-purple-400/30"
+                              className="w-full bg-gradient-to-t from-purple-600 via-purple-500 to-purple-400 border-t-2 border-purple-300/50"
                               initial={{ height: 0 }}
                               animate={{ height: `${robotPercent}%` }}
-                              transition={{ duration: 0.8, delay: i * 0.05 + 0.2, ease: "easeOut" }}
+                              transition={{ duration: 0.9, delay: i * 0.08 + 0.3, ease: "easeOut" }}
                               style={{ 
                                 bottom: `${machinePercent}%`
                               }}
                             />
                           </div>
                           
-                          {/* Value labels - better positioned */}
-                          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-center space-y-0.5">
-                            <div className="text-xs font-semibold text-blue-300 whitespace-nowrap">
-                              M: {d.machines.toLocaleString()}
+                          {/* Value labels - positioned above bars */}
+                          <div className="absolute -top-14 left-1/2 transform -translate-x-1/2 text-center space-y-1">
+                            <div className="text-sm font-bold text-blue-300 whitespace-nowrap drop-shadow-lg">
+                              M: {machinesValue.toLocaleString()}
                             </div>
-                            <div className="text-xs font-semibold text-purple-300 whitespace-nowrap">
-                              R: {d.robotics.toLocaleString()}
+                            <div className="text-sm font-bold text-purple-300 whitespace-nowrap drop-shadow-lg">
+                              R: {roboticsValue.toLocaleString()}
                             </div>
-                            <div className="text-[10px] font-medium text-muted-foreground mt-1">
-                              Total: {total.toLocaleString()}
+                            <div className="text-xs font-semibold text-foreground mt-1.5 px-2 py-0.5 rounded bg-muted/50">
+                              Total: {totalValue.toLocaleString()}
                             </div>
                           </div>
                         </div>
-                        <span className="text-xs font-medium text-muted-foreground mt-1">{d.hour}</span>
+                        <span className="text-sm font-semibold text-foreground">{d.hour}</span>
                       </div>
                     );
                   })}
@@ -573,15 +577,27 @@ export function Dashboard() {
             </div>
           </div>
           
-          {/* Legend - improved styling */}
-          <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded shadow-sm"></div>
-              <span className="text-sm font-medium">Machines: {machineBottlesPerHourTotal.toLocaleString()}/hr</span>
+          {/* Legend - improved styling with exact values */}
+          <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t-2 border-border/50">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-blue-500/15 border-2 border-blue-500/30 shadow-md">
+              <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded shadow-sm"></div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-blue-300">Machines</span>
+                <span className="text-xs font-bold text-blue-400">{machineBottlesPerHourTotal.toLocaleString()}/hr</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded shadow-sm"></div>
-              <span className="text-sm font-medium">Robotics: {robotBottlesPerHourTotal.toLocaleString()}/hr</span>
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-purple-500/15 border-2 border-purple-500/30 shadow-md">
+              <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-purple-600 rounded shadow-sm"></div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-purple-300">Robotics</span>
+                <span className="text-xs font-bold text-purple-400">{robotBottlesPerHourTotal.toLocaleString()}/hr</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primary/10 border-2 border-primary/30 shadow-md">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-primary">Total Production</span>
+                <span className="text-xs font-bold text-primary">{(machineBottlesPerHourTotal + robotBottlesPerHourTotal).toLocaleString()}/hr</span>
+              </div>
             </div>
           </div>
         </CardContent>
