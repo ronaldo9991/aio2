@@ -41,7 +41,16 @@ Name:  N8N_SHARED_SECRET
 Value: 7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
 ```
 
-#### Variable 4: N8N_INBOUND_SECRET (for WhatsApp replies)
+#### Variable 4: N8N_INBOUND_WEBHOOK (for WhatsApp replies from manager)
+```
+Name:  N8N_INBOUND_WEBHOOK
+Value: https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound
+```
+Click **"Add"**
+
+---
+
+#### Variable 5: N8N_INBOUND_SECRET (for WhatsApp replies authentication)
 ```
 Name:  N8N_INBOUND_SECRET
 Value: 20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3
@@ -50,7 +59,7 @@ Click **"Add"**
 
 ---
 
-#### Variable 5: RAILWAY_INBOUND_SECRET
+#### Variable 6: RAILWAY_INBOUND_SECRET
 
 **First, generate a secret:**
 - Open terminal/command prompt
@@ -68,10 +77,11 @@ Click **"Add"**
 
 ### Step 4: Verify All Variables
 
-You should see these 5 variables in your list:
+You should see these 6 variables in your list:
 - ✅ BASE_URL
 - ✅ N8N_TICKET_CREATED_WEBHOOK
 - ✅ N8N_SHARED_SECRET
+- ✅ N8N_INBOUND_WEBHOOK
 - ✅ N8N_INBOUND_SECRET
 - ✅ RAILWAY_INBOUND_SECRET
 
@@ -93,6 +103,8 @@ BASE_URL=https://aio2-production.up.railway.app
 N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 
 N8N_SHARED_SECRET=7a39575f962572e6d7ff9bba435011fdd3943d40b230bcc284ad10c26e128fa6
+
+N8N_INBOUND_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound
 
 N8N_INBOUND_SECRET=20e4dc3ab2cad293a5e789c2169a8608d2692b64e9645fcfbb841e3cbfc97ef3
 

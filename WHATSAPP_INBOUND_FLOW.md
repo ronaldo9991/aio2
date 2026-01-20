@@ -123,6 +123,7 @@ curl -X POST "https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-in
 
 ### Test Railway Endpoint
 ```bash
+# Use RAILWAY_INBOUND_SECRET (NOT N8N_INBOUND_SECRET)
 curl -X POST "https://aio2-production.up.railway.app/ticket/inbound" \
   -H "Content-Type: application/json" \
   -H "x-api-key: 44214f24e57b423afecff36860965a1ae979f15a884703166a6aafbd05f8d5ca" \
@@ -134,6 +135,8 @@ curl -X POST "https://aio2-production.up.railway.app/ticket/inbound" \
     "externalId": "SM1234567890abcdef"
   }'
 ```
+
+**Important:** Use `RAILWAY_INBOUND_SECRET` (not `N8N_INBOUND_SECRET`) when calling Railway endpoint.
 
 ## Railway Variables
 
