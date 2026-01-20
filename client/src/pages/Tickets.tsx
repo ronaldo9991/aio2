@@ -58,8 +58,14 @@ export function Tickets() {
 
   const createTicketMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest('POST', '/ticket', data);
-      return response.json();
+      const result = await apiRequest<{ ok: boolean; ticketRef: string; ticketId: string }>('POST', '/ticket', data);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      if (!result.data) {
+        throw new Error('No data returned from server');
+      }
+      return result.data;
     },
     onSuccess: (data) => {
       toast({
