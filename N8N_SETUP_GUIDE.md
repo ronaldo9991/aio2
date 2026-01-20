@@ -136,7 +136,7 @@ return {
 1. Add an **HTTP Request** node
 2. Configure:
    - **Method**: `POST`
-   - **URL**: `https://aio2-production.up.railway.app/api/ticket/inbound`
+   - **URL**: `https://aio2-production.up.railway.app/ticket/inbound`
    - **Headers**:
      - `Content-Type`: `application/json`
      - `x-api-key`: `{{ $env.RAILWAY_INBOUND_SECRET }}`
