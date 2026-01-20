@@ -1,11 +1,32 @@
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { Ticket, Clock, User, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Ticket, Clock, User, CheckCircle2, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPIChip, KPIGrid } from '@/components/KPIChip';
 import { DataTable } from '@/components/DataTable';
 import { PageSkeleton } from '@/components/Skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/api';
 
 interface TicketItem {
   id: string;
@@ -19,9 +40,57 @@ interface TicketItem {
 }
 
 export function Tickets() {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    customerName: '',
+    customerPhone: '',
+    customerEmail: '',
+    subject: '',
+    message: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: tickets, isLoading } = useQuery<TicketItem[]>({
     queryKey: ['/api/tickets'],
   });
+
+  const createTicketMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const response = await apiRequest('POST', '/ticket', data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Ticket Created',
+        description: `Ticket ${data.ticketRef} has been created successfully. n8n notification sent.`,
+      });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        customerName: '',
+        customerPhone: '',
+        customerEmail: '',
+        subject: '',
+        message: '',
+        priority: 'medium',
+      });
+      // Refresh tickets list
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create ticket',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createTicketMutation.mutate(formData);
+  };
 
   if (isLoading) {
     return <PageSkeleton />;
@@ -142,7 +211,12 @@ export function Tickets() {
             <CardTitle className="text-base font-semibold">All Tickets</CardTitle>
             <CardDescription>Work orders and maintenance tasks</CardDescription>
           </div>
-          <Button size="sm" data-testid="button-create-ticket">
+          <Button 
+            size="sm" 
+            data-testid="button-create-ticket"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
             Create Ticket
           </Button>
         </CardHeader>
@@ -154,6 +228,107 @@ export function Tickets() {
           />
         </CardContent>
       </Card>
+
+      {/* Create Ticket Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create Support Ticket</DialogTitle>
+            <DialogDescription>
+              Create a new customer support ticket. This will automatically notify the operation manager via WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customerName">Customer Name *</Label>
+                <Input
+                  id="customerName"
+                  value={formData.customerName}
+                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  required
+                  placeholder="John Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone">Phone Number *</Label>
+                <Input
+                  id="customerPhone"
+                  type="tel"
+                  value={formData.customerPhone}
+                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                  required
+                  placeholder="+1234567890"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerEmail">Email Address *</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                value={formData.customerEmail}
+                onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                required
+                placeholder="customer@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject *</Label>
+              <Input
+                id="subject"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                required
+                placeholder="Brief description of the issue"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority *</Label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') =>
+                  setFormData({ ...formData, priority: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">Message *</Label>
+              <Textarea
+                id="message"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                required
+                placeholder="Detailed description of the issue..."
+                rows={5}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+                disabled={createTicketMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createTicketMutation.isPending}>
+                {createTicketMutation.isPending ? 'Creating...' : 'Create Ticket'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
