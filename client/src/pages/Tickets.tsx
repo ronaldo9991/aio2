@@ -635,8 +635,11 @@ export function Tickets() {
 
               {/* Messages Thread */}
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                <div className="text-sm font-medium text-muted-foreground mb-2">
-                  Conversation ({ticketDetails.messages.length} messages)
+                <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center justify-between">
+                  <span>Conversation ({ticketDetails.messages.length} messages)</span>
+                  {isLoadingTicketDetails && (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 {ticketDetails.messages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
