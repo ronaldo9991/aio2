@@ -37,9 +37,10 @@ AGENT_PHONE=+919655716000
 
 ```bash
 # Generate secure random strings
-openssl rand -hex 32  # For N8N_SHARED_SECRET
 openssl rand -hex 32  # For RAILWAY_INBOUND_SECRET
 ```
+
+**Note:** `N8N_SHARED_SECRET` is already configured. See `RAILWAY_SETUP.md` for the exact value.
 
 ## API Endpoints
 
