@@ -311,7 +311,7 @@ export function Dashboard() {
                     const maxValue = 2563;
                     const range = maxValue - minValue;
                     const targetPercent = ((targetThroughput - minValue) / range) * 100;
-                    return (
+                return (
                       <div 
                         className="absolute left-0 right-0 border-t border-dashed border-blue-400 z-10"
                         style={{ bottom: `${targetPercent}%` }}
@@ -369,17 +369,16 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>AI Risk Score Timeline</CardTitle>
-            <CardDescription>Average failure risk across all machines (%)</CardDescription>
+            <CardDescription>Average failure risk: 12% (Low Risk)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[350px] relative">
               <div className="absolute inset-0 flex flex-col">
-                {/* Y-axis */}
+                {/* Y-axis - optimized for 12% display */}
                 <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
-                  <span className="font-medium">30%</span>
-                  <span className="font-medium">25%</span>
                   <span className="font-medium">20%</span>
                   <span className="font-medium">15%</span>
+                  <span className="font-medium text-green-400 font-bold">12%</span>
                   <span className="font-medium">10%</span>
                   <span className="font-medium">5%</span>
                   <span className="font-medium">0%</span>
@@ -389,35 +388,50 @@ export function Dashboard() {
                 <div className="ml-14 mr-4 h-full relative">
                   {/* Risk zones */}
                   <div className="absolute inset-0">
-                    <div className="absolute top-0 left-0 right-0 bg-yellow-500/10" style={{ height: '33.33%' }} />
-                    <div className="absolute bottom-0 left-0 right-0 bg-green-500/10" style={{ height: '66.67%' }} />
+                    <div className="absolute top-0 left-0 right-0 bg-yellow-500/10" style={{ height: '40%' }} />
+                    <div className="absolute bottom-0 left-0 right-0 bg-green-500/10" style={{ height: '60%' }} />
+                    {/* Highlight 12% line */}
+                    <div className="absolute left-0 right-0 border-t-2 border-green-400 border-dashed z-20" style={{ bottom: '40%' }}>
+                      <div className="absolute -left-12 -top-2.5 text-xs font-bold text-green-400 bg-card px-1">12%</div>
+                    </div>
                   </div>
                   
                   {/* Line chart */}
                   <svg className="w-full h-full relative z-10" preserveAspectRatio="none">
                     <polyline
                       fill="none"
-                      stroke="hsl(199, 89%, 48%)"
-                      strokeWidth="2"
+                      stroke="hsl(142, 71%, 45%)"
+                      strokeWidth="3"
                       points={aiRiskTimeline.map((d, i) => {
                         const x = (i / (aiRiskTimeline.length - 1)) * 100;
-                        const y = 100 - ((d.risk / 30) * 100);
+                        // Scale: 0% = bottom (100%), 20% = top (0%)
+                        const y = 100 - ((d.risk / 20) * 100);
                         return `${x}%,${y}%`;
                       }).join(' ')}
                     />
                     {aiRiskTimeline.map((d, i) => {
                       const x = (i / (aiRiskTimeline.length - 1)) * 100;
-                      const y = 100 - ((d.risk / 30) * 100);
+                      const y = 100 - ((d.risk / 20) * 100);
                       return (
-                        <circle
-                          key={i}
-                          cx={`${x}%`}
-                          cy={`${y}%`}
-                          r="4"
-                          fill="hsl(199, 89%, 48%)"
-                          stroke="hsl(var(--card))"
-                          strokeWidth="2"
-                        />
+                        <g key={i}>
+                          <circle
+                            cx={`${x}%`}
+                            cy={`${y}%`}
+                            r="5"
+                            fill="hsl(142, 71%, 45%)"
+                            stroke="hsl(var(--card))"
+                            strokeWidth="2"
+                          />
+                          <text
+                            x={`${x}%`}
+                            y={`${y}%`}
+                            dy="-10"
+                            textAnchor="middle"
+                            className="text-[10px] font-bold fill-green-400"
+                          >
+                            {d.risk.toFixed(0)}%
+                          </text>
+                        </g>
                       );
                     })}
                   </svg>
@@ -430,109 +444,132 @@ export function Dashboard() {
                 <span key={i}>{d.time}</span>
               ))}
             </div>
-            {/* Legend */}
-            <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-500/20 rounded"></div>
-                <span className="text-sm">&lt;20% (Low Risk)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-500/20 rounded"></div>
-                <span className="text-sm">20-30% (Medium Risk)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500/20 rounded"></div>
-                <span className="text-sm">&gt;30% (High Risk)</span>
+            {/* Summary */}
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-center gap-4">
+                <div className="px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">12%</div>
+                    <div className="text-xs text-muted-foreground">Current Risk Score</div>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Status: <span className="font-semibold text-green-400">Low Risk</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Production Breakdown: Machines vs Robotics per Hour */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Production per Hour: Machines vs Robotics</CardTitle>
-          <CardDescription>Hourly bottle production breakdown by system type</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[400px] relative">
-            <div className="absolute inset-0 flex flex-col">
-              {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
-                <span className="font-medium">2,500</span>
-                <span className="font-medium">2,000</span>
-                <span className="font-medium">1,500</span>
-                <span className="font-medium">1,000</span>
-                <span className="font-medium">500</span>
-                <span className="font-medium">0</span>
-              </div>
-              
-              {/* Chart area */}
-              <div className="ml-14 mr-4 h-full relative">
-                <div className="absolute inset-0 flex items-end justify-between gap-2 pb-12">
-                  {hourlyProductionData.map((d, i) => {
-                    const machinesValue = machineBottlesPerHourTotal; // 1,350
-                    const roboticsValue = robotBottlesPerHourTotal; // 980
-                    const totalValue = machinesValue + roboticsValue; // 2,330
-                    
-                    const maxValue = 2500;
-                    const machineHeight = (machinesValue / maxValue) * 100;
-                    const robotHeight = (roboticsValue / maxValue) * 100;
-                    
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center h-full">
-                        {/* Value labels above */}
-                        <div className="mb-2 text-center space-y-0.5">
-                          <div className="text-xs font-semibold text-blue-400">M: {machinesValue.toLocaleString()}</div>
-                          <div className="text-xs font-semibold text-purple-400">R: {roboticsValue.toLocaleString()}</div>
-                        </div>
-                        
-                        {/* Stacked bars */}
-                        <div className="flex-1 w-full flex flex-col justify-end relative min-h-[200px]">
-                          <div className="w-full relative">
-                            {/* Machines bar */}
+      {/* Production Breakdown: Split into 2 Graphs */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Machines Production Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Machines Production</CardTitle>
+            <CardDescription>Hourly bottle production from machines</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] relative">
+              <div className="absolute inset-0 flex flex-col">
+                {/* Y-axis */}
+                <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
+                  <span className="font-medium">1,500</span>
+                  <span className="font-medium">1,350</span>
+                  <span className="font-medium">1,000</span>
+                  <span className="font-medium">500</span>
+                  <span className="font-medium">0</span>
+                </div>
+                
+                {/* Chart */}
+                <div className="ml-14 mr-4 h-full relative">
+                  <div className="absolute inset-0 flex items-end justify-between gap-2 pb-12">
+                    {hourlyProductionData.map((d, i) => {
+                      const machinesValue = machineBottlesPerHourTotal; // 1,350
+                      const maxValue = 1500;
+                      const height = (machinesValue / maxValue) * 100;
+                      
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center h-full">
+                          <div className="mb-2 text-sm font-bold text-blue-400">{machinesValue.toLocaleString()}</div>
+                          <div className="flex-1 w-full flex items-end min-h-[180px]">
                             <motion.div
                               className="w-full bg-blue-500 rounded-t"
                               initial={{ height: 0 }}
-                              animate={{ height: `${machineHeight}%` }}
+                              animate={{ height: `${height}%` }}
                               transition={{ duration: 0.6, delay: i * 0.05 }}
                               style={{ minHeight: '2px' }}
                             />
-                            {/* Robotics bar */}
-                            <motion.div
-                              className="w-full bg-purple-500 rounded-t"
-                              initial={{ height: 0 }}
-                              animate={{ height: `${robotHeight}%` }}
-                              transition={{ duration: 0.6, delay: i * 0.05 + 0.2 }}
-                              style={{ minHeight: '2px' }}
-                            />
                           </div>
+                          <div className="mt-2 text-xs text-muted-foreground">{d.hour}</div>
                         </div>
-                        
-                        {/* Hour label */}
-                        <div className="mt-2 text-xs font-medium text-muted-foreground">{d.hour}</div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-8 mt-6 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm">Machines: {machineBottlesPerHourTotal.toLocaleString()}/hr</span>
+            <div className="mt-4 pt-4 border-t text-center">
+              <div className="text-2xl font-bold text-blue-400">{machineBottlesPerHourTotal.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">bottles/hour</div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-purple-500 rounded"></div>
-              <span className="text-sm">Robotics: {robotBottlesPerHourTotal.toLocaleString()}/hr</span>
+          </CardContent>
+        </Card>
+
+        {/* Robotics Production Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Robotics Production</CardTitle>
+            <CardDescription>Hourly bottle production from robotics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] relative">
+              <div className="absolute inset-0 flex flex-col">
+                {/* Y-axis */}
+                <div className="absolute left-0 top-0 bottom-12 flex flex-col justify-between text-sm text-muted-foreground pr-3 w-12">
+                  <span className="font-medium">1,200</span>
+                  <span className="font-medium">1,000</span>
+                  <span className="font-medium">980</span>
+                  <span className="font-medium">500</span>
+                  <span className="font-medium">0</span>
+                </div>
+                
+                {/* Chart */}
+                <div className="ml-14 mr-4 h-full relative">
+                  <div className="absolute inset-0 flex items-end justify-between gap-2 pb-12">
+                    {hourlyProductionData.map((d, i) => {
+                      const roboticsValue = robotBottlesPerHourTotal; // 980
+                      const maxValue = 1200;
+                      const height = (roboticsValue / maxValue) * 100;
+                      
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center h-full">
+                          <div className="mb-2 text-sm font-bold text-purple-400">{roboticsValue.toLocaleString()}</div>
+                          <div className="flex-1 w-full flex items-end min-h-[180px]">
+                            <motion.div
+                              className="w-full bg-purple-500 rounded-t"
+                              initial={{ height: 0 }}
+                              animate={{ height: `${height}%` }}
+                              transition={{ duration: 0.6, delay: i * 0.05 }}
+                              style={{ minHeight: '2px' }}
+                            />
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">{d.hour}</div>
+                  </div>
+                );
+              })}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-4 pt-4 border-t text-center">
+              <div className="text-2xl font-bold text-purple-400">{robotBottlesPerHourTotal.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">bottles/hour</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Labor & Cost Metrics */}
       <div className="grid lg:grid-cols-2 gap-6">
