@@ -48,6 +48,7 @@ https://n8n.srv1281573.hstgr.cloud/webhook-test/twilio/whatsapp-inbound
 
 ### Step 2: Function Node (Parse Message)
 ```javascript
+// IMPORTANT: Wrap output in 'json' key to avoid n8n "Invalid output format" error
 const twilioData = $input.item.json;
 const messageBody = twilioData.Body || twilioData.message || '';
 const ticketRefMatch = messageBody.match(/T-\d{8}-\d{4}/);
@@ -57,18 +58,23 @@ let replyMessage = messageBody.replace(ticketRef || '', '').trim();
 
 if (!ticketRef) {
   return {
-    error: true,
-    message: "Could not identify ticket reference. Please include ticket number (e.g., T-20250115-1234) in your reply."
+    json: {
+      hasError: true,
+      errorMessage: "Could not identify ticket reference. Please include ticket number (e.g., T-20250115-1234) in your reply."
+    }
   };
 }
 
 return {
-  ticketRef: ticketRef,
-  message: replyMessage || messageBody,
-  from: twilioData.From || '+919655716000',
-  channel: 'whatsapp',
-  externalId: twilioData.MessageSid || null,
-  mediaUrl: twilioData.MediaUrl0 || null
+  json: {
+    ticketRef: ticketRef,
+    message: replyMessage || messageBody,
+    from: twilioData.From || '+919655716000',
+    channel: 'whatsapp',
+    externalId: twilioData.MessageSid || null,
+    mediaUrl: twilioData.MediaUrl0 || null,
+    hasError: false
+  }
 };
 ```
 
