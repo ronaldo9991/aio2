@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ticket, Clock, User, CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { Ticket, Clock, User, CheckCircle2, Plus, Trash2, MessageSquare, Send, Phone, Mail, Globe } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPIChip, KPIGrid } from '@/components/KPIChip';
@@ -47,12 +47,33 @@ interface TicketItem {
   dueBy: string | null;
   entityType: string;
   entityId: string;
+  ticketRef?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  subject?: string;
+  priority?: string;
+}
+
+interface TicketMessage {
+  id: string;
+  sender: 'customer' | 'manager';
+  channel: 'web' | 'whatsapp' | 'sms' | 'email';
+  body: string;
+  mediaUrl: string | null;
+  createdAt: string;
+}
+
+interface TicketWithMessages {
+  ticket: TicketItem;
+  messages: TicketMessage[];
 }
 
 export function Tickets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [viewTicketRef, setViewTicketRef] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -66,6 +87,23 @@ export function Tickets() {
 
   const { data: tickets, isLoading } = useQuery<TicketItem[]>({
     queryKey: ['/api/tickets'],
+  });
+
+  // Fetch ticket details with messages when viewing
+  const { data: ticketDetails, isLoading: isLoadingTicketDetails } = useQuery<TicketWithMessages>({
+    queryKey: ['/api/ticket', viewTicketRef],
+    queryFn: async () => {
+      if (!viewTicketRef) return null;
+      // Use fetch directly since this endpoint might not require auth
+      const response = await fetch(`/api/ticket/${viewTicketRef}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch ticket');
+      }
+      const result = await response.json();
+      return result;
+    },
+    enabled: !!viewTicketRef,
   });
 
   const createTicketMutation = useMutation({
@@ -203,10 +241,16 @@ export function Tickets() {
 
   const columns = [
     { 
-      key: 'id', 
+      key: 'ticketRef', 
       header: 'Ticket ID', 
       sortable: true,
-      render: (t: TicketItem) => <span className="font-mono text-sm">{t.id}</span>
+      render: (t: TicketItem) => <span className="font-mono text-sm">{t.ticketRef || t.id}</span>
+    },
+    { 
+      key: 'subject', 
+      header: 'Subject', 
+      sortable: true,
+      render: (t: TicketItem) => t.subject || '-'
     },
     { key: 'type', header: 'Type', sortable: true },
     {
@@ -220,11 +264,20 @@ export function Tickets() {
       ),
     },
     { 
-      key: 'assignedTo', 
-      header: 'Assigned To',
-      render: (t: TicketItem) => t.assignedTo || <span className="text-muted-foreground text-xs">Unassigned</span>
+      key: 'customerName', 
+      header: 'Customer',
+      render: (t: TicketItem) => t.customerName || '-'
     },
-    { key: 'entityId', header: 'Entity' },
+    { 
+      key: 'priority', 
+      header: 'Priority',
+      sortable: true,
+      render: (t: TicketItem) => (
+        <span className="capitalize text-xs">
+          {t.priority || 'medium'}
+        </span>
+      )
+    },
     {
       key: 'dueBy',
       header: 'Due By',
@@ -244,11 +297,19 @@ export function Tickets() {
       header: '',
       render: (t: TicketItem) => (
         <div className="flex gap-2">
-          {t.status === 'open' && (
-            <Button size="sm" variant="outline" data-testid={`button-view-${t.id}`}>
-              View
-            </Button>
-          )}
+          <Button 
+            size="sm" 
+            variant="outline" 
+            data-testid={`button-view-${t.id}`}
+            onClick={() => {
+              // Try ticketRef first, fallback to id
+              const ref = t.ticketRef || t.id;
+              setViewTicketRef(ref);
+            }}
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            View
+          </Button>
           <Button 
             size="sm" 
             variant="ghost" 
@@ -467,6 +528,147 @@ export function Tickets() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Ticket Conversation Dialog */}
+      <Dialog open={!!viewTicketRef} onOpenChange={(open) => !open && setViewTicketRef(null)}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Ticket Conversation
+            </DialogTitle>
+            <DialogDescription>
+              {ticketDetails?.ticket.ticketRef && (
+                <span className="font-mono">Ticket: {ticketDetails.ticket.ticketRef}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingTicketDetails ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Loading conversation...</div>
+            </div>
+          ) : ticketDetails ? (
+            <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+              {/* Ticket Info */}
+              <Card className="border-border/50">
+                <CardContent className="p-4 space-y-2">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Subject:</span>
+                      <p className="font-medium">{ticketDetails.ticket.subject || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Status:</span>
+                      <p>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusColors[ticketDetails.ticket.status]}`}>
+                          {ticketDetails.ticket.status.replace('_', ' ')}
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Customer:</span>
+                      <p className="font-medium">{ticketDetails.ticket.customerName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Priority:</span>
+                      <p className="capitalize">{ticketDetails.ticket.priority || 'medium'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Phone:</span>
+                      <p className="font-mono text-xs">{ticketDetails.ticket.customerPhone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Email:</span>
+                      <p className="text-xs">{ticketDetails.ticket.customerEmail || 'N/A'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Messages Thread */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                <div className="text-sm font-medium text-muted-foreground mb-2">
+                  Conversation ({ticketDetails.messages.length} messages)
+                </div>
+                {ticketDetails.messages.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No messages yet
+                  </div>
+                ) : (
+                  ticketDetails.messages.map((msg, idx) => {
+                    const isManager = msg.sender === 'manager';
+                    const isCustomer = msg.sender === 'customer';
+                    
+                    const channelIcons = {
+                      web: Globe,
+                      whatsapp: MessageSquare,
+                      sms: Phone,
+                      email: Mail,
+                    };
+                    
+                    const ChannelIcon = channelIcons[msg.channel] || MessageSquare;
+                    
+                    return (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className={`flex gap-3 ${isManager ? 'flex-row-reverse' : 'flex-row'}`}
+                      >
+                        <div className={`flex-1 ${isManager ? 'items-end' : 'items-start'} flex flex-col`}>
+                          <div
+                            className={`rounded-lg p-3 max-w-[80%] ${
+                              isManager
+                                ? 'bg-blue-500/20 border border-blue-500/30'
+                                : 'bg-muted border border-border'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-xs font-medium ${isManager ? 'text-blue-400' : 'text-muted-foreground'}`}>
+                                {isManager ? 'Manager' : 'Customer'}
+                              </span>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <ChannelIcon className="w-3 h-3" />
+                                <span className="capitalize">{msg.channel}</span>
+                              </div>
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                            {msg.mediaUrl && (
+                              <a
+                                href={msg.mediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:underline mt-2 block"
+                              >
+                                View Media
+                              </a>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground mt-1">
+                            {new Date(msg.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Ticket not found
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewTicketRef(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
