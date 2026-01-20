@@ -52,7 +52,7 @@ Add these to Railway (Project Settings → Variables):
 
 ```bash
 BASE_URL=https://aio2-production.up.railway.app
-N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
+N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
 N8N_SHARED_SECRET=<generate-with-openssl-rand-hex-32>
 RAILWAY_INBOUND_SECRET=<generate-with-openssl-rand-hex-32>
 AGENT_PHONE=+919655716000  # Optional, defaults to this

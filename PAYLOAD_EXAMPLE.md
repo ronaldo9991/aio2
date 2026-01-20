@@ -52,7 +52,7 @@ await notifyN8nTicketCreated({
 ## n8n Webhook URL
 
 ```
-https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
+https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
 ```
 
 ## Testing
@@ -60,7 +60,7 @@ https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
 Test the webhook manually:
 
 ```bash
-curl -X POST https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created \
+curl -X POST https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created \
   -H "Content-Type: application/json" \
   -H "x-api-key: your-shared-secret" \
   -d '{

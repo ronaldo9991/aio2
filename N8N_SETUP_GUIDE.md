@@ -3,7 +3,7 @@
 ## Your n8n Webhook URL
 
 ```
-https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
+https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
 ```
 
 ## Railway Environment Variables
@@ -12,7 +12,7 @@ Set these in Railway → Project Settings → Variables:
 
 ```bash
 BASE_URL=https://aio2-production.up.railway.app
-N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook-test/ticket-created
+N8N_TICKET_CREATED_WEBHOOK=https://n8n.srv1281573.hstgr.cloud/webhook/ticket-created
 N8N_SHARED_SECRET=<generate-secure-random-string>
 RAILWAY_INBOUND_SECRET=<generate-secure-random-string>
 ```
@@ -24,7 +24,7 @@ RAILWAY_INBOUND_SECRET=<generate-secure-random-string>
 1. Add a **Webhook** node
 2. Configure:
    - **HTTP Method**: `POST`
-   - **Path**: `/webhook-test/ticket-created` (already in your URL)
+   - **Path**: `/webhook/ticket-created` (already in your URL)
    - **Authentication**: `Header Auth`
      - **Name**: `x-api-key`
      - **Value**: `{{ $env.N8N_SHARED_SECRET }}` (or hardcode your secret)
