@@ -95,7 +95,7 @@ export function Dashboard() {
     totalJobs: 47,
     pendingApprovals: 3,
     activeAlerts: 5,
-    machineUtilization: 0.84,
+    machineUtilization: 0.83,
     onTimeRate: 0.92,
     avgRiskScore: 0.12, // Lower risk score
     oee: 0.86, // Minimum 86%
@@ -481,8 +481,8 @@ export function Dashboard() {
                 },
                 {
                   category: 'Utilization',
-                  Machines: 84, // Fixed: 84% utilization
-                  Robotics: 95, // Fixed: 95% utilization
+                  Machines: 83, // Fixed: 83% utilization
+                  Robotics: 81, // Fixed: 81% utilization
                   fullMark: 100,
                 },
                 {
@@ -560,8 +560,8 @@ export function Dashboard() {
                   innerRadius="30%" 
                   outerRadius="80%" 
                   data={[
-                    { name: 'Machines', value: 84, fill: 'hsl(199, 89%, 48%)' },
-                    { name: 'Robotics', value: 95, fill: 'hsl(280, 70%, 60%)' },
+                    { name: 'Machines', value: 83, fill: 'hsl(199, 89%, 48%)' },
+                    { name: 'Robotics', value: 81, fill: 'hsl(280, 70%, 60%)' },
                   ]}
                   startAngle={90}
                   endAngle={-270}
@@ -587,11 +587,11 @@ export function Dashboard() {
               </ResponsiveContainer>
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">84%</div>
+                  <div className="text-2xl font-bold text-primary">83%</div>
                   <div className="text-xs text-muted-foreground mt-1">Machines Utilization</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-400">95%</div>
+                  <div className="text-2xl font-bold text-purple-400">81%</div>
                   <div className="text-xs text-muted-foreground mt-1">Robotics Utilization</div>
                 </div>
               </div>
@@ -669,8 +669,8 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={hours.map((hour, i) => ({
                 hour,
-                Machines: dashboardStats.machineUtilization * 100, // Fixed: 84% (from dashboardStats)
-                Robotics: 95, // Fixed: 95% utilization (matches Radial chart)
+                Machines: dashboardStats.machineUtilization * 100, // Fixed: 83% (from dashboardStats)
+                Robotics: 81, // Fixed: 81% utilization (matches Radial chart)
               }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
